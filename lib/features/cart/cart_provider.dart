@@ -29,18 +29,21 @@ class CartNotifier extends Notifier<List<CartItem>> {
   void decrease(String id) => _change(id, -1);
 
   void _change(String id, int delta) {
-    state = [
-      for (final e in state)
-        if (e.product.id == id)
-          if (e.quantity + delta > 0) e.copyWith(quantity: e.quantity + delta)
-          else
-            e
-    ];
+    state = state
+        .map((e) {
+          if (e.product.id == id) {
+            final newQty = e.quantity + delta;
+            return newQty > 0 ? e.copyWith(quantity: newQty) : null;
+          }
+          return e;
+        })
+        .whereType<CartItem>()
+        .toList();
   }
 
   void remove(String id) =>
       state = state.where((e) => e.product.id != id).toList();
-
+  void clear() => state = [];
   double get subtotal =>
       state.fold(0, (sum, e) => sum + e.product.price * e.quantity);
 }

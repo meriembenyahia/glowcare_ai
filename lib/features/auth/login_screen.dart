@@ -7,11 +7,54 @@ import '../../core/theme/widgets/app_text_field.dart';
 import '../../core/theme/widgets/primary_button.dart';
 import 'auth_provider.dart';
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ref.read(authProvider.notifier).logIn();
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final error = await ref
+        .read(authProvider.notifier)
+        .signInWithEmail(email, password);
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      } else {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -67,13 +110,15 @@ class LoginScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              const AppTextField(
+              AppTextField(
+                controller: _emailController,
                 hint: 'Email address',
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 14),
-              const AppTextField(
+              AppTextField(
+                controller: _passwordController,
                 hint: 'Password',
                 icon: Icons.lock_outline,
                 isPassword: true,
@@ -93,12 +138,8 @@ class LoginScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               PrimaryButton(
-                label: 'Log In',
-                onPressed: () {
-                  // التحقق الحقيقي نزيدوه مع الـ backend
-                  ref.read(authProvider.notifier).logIn();
-                  Navigator.of(context).pop();
-                },
+                label: _isLoading ? 'Connecting...' : 'Log In',
+                onPressed: _isLoading ? () {} : _handleLogin,
               ),
               const SizedBox(height: 14),
               Center(
@@ -146,7 +187,10 @@ class LoginScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               Center(
                 child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () {
+                    ref.read(authProvider.notifier).loginAsGuest();
+                    Navigator.of(context).pop();
+                  },
                   child: Text(
                     'Continue as Guest',
                     style: GoogleFonts.poppins(

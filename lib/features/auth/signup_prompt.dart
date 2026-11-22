@@ -12,6 +12,8 @@ Timer? startSignupPromptTimer(BuildContext context, WidgetRef ref) {
   return Timer(const Duration(seconds: 30), () {
     if (!context.mounted) return;
     if (ref.read(authProvider) == AuthStatus.loggedIn) return;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
     _showSignupDialog(context);
   });
 }

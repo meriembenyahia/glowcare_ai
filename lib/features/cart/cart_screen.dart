@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../orders/checkout_screen.dart';
 import 'cart_provider.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -12,7 +13,7 @@ class CartScreen extends ConsumerWidget {
     final items = ref.watch(cartProvider);
     final notifier = ref.read(cartProvider.notifier);
     final subtotal = notifier.subtotal;
-    const delivery = 5.0;
+    const delivery = 500.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -24,8 +25,18 @@ class CartScreen extends ConsumerWidget {
       ),
       body: items.isEmpty
           ? Center(
-          child: Text('Your cart is empty',
-              style: GoogleFonts.poppins(color: AppColors.mutedText)))
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.shopping_bag_outlined,
+                size: 64, color: AppColors.mutedText),
+            const SizedBox(height: 12),
+            Text('Your cart is empty',
+                style: GoogleFonts.poppins(
+                    fontSize: 15, color: AppColors.mutedText)),
+          ],
+        ),
+      )
           : Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -33,8 +44,9 @@ class CartScreen extends ConsumerWidget {
             Expanded(
               child: ListView.separated(
                 itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) {
+                separatorBuilder: (context, index) =>
+                const SizedBox(height: 10),
+                itemBuilder: (context, i) {
                   final e = items[i];
                   return Container(
                     padding: const EdgeInsets.all(12),
@@ -49,7 +61,8 @@ class CartScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
                             children: [
                               Text(e.product.name,
                                   style: GoogleFonts.poppins(
@@ -60,7 +73,7 @@ class CartScreen extends ConsumerWidget {
                                       fontSize: 11,
                                       color: AppColors.mutedText)),
                               Text(
-                                  '\$${(e.product.price * e.quantity).toStringAsFixed(2)}',
+                                  '${(e.product.price * e.quantity).toStringAsFixed(0)} DA',
                                   style: GoogleFonts.poppins(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600)),
@@ -78,6 +91,12 @@ class CartScreen extends ConsumerWidget {
                           onPressed: () =>
                               notifier.increase(e.product.id),
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.redAccent),
+                          onPressed: () =>
+                              notifier.remove(e.product.id),
+                        ),
                       ],
                     ),
                   );
@@ -90,9 +109,10 @@ class CartScreen extends ConsumerWidget {
             _row('Total', subtotal + delivery, bold: true),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () {
-                // نخدمو Checkout بعدين
-              },
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const CheckoutScreen()),
+              ),
               child: const Text('Proceed to Checkout'),
             ),
           ],
@@ -112,7 +132,7 @@ class CartScreen extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: style),
-          Text('\$${value.toStringAsFixed(2)}', style: style),
+          Text('${value.toStringAsFixed(0)} DA', style: style),
         ],
       ),
     );

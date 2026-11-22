@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../orders/order_history_screen.dart';
 import '../shop/shop_screen.dart';
+import '../routine/routine_screen.dart';
 import 'home_screen.dart';
+import '../ingredients/ingredient_checker_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -13,12 +16,12 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
-  final List<Widget> _pages = const [
-    HomeScreen(),
-    ShopScreen(),
-    Center(child: Text('Beauty Lab')),
-    Center(child: Text('Routine')),
-    Center(child: Text('Profile')),
+  final List<Widget> _pages = [
+    const HomeScreen(),
+    const ShopScreen(),
+    const IngredientCheckerScreen(),
+    const RoutineScreen(),
+    const OrderHistoryScreen(),
   ];
 
   @override
@@ -53,9 +56,9 @@ class _MainShellState extends State<MainShell> {
             label: 'Routine',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.deepGreen),
-            label: 'Profile',
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long, color: AppColors.deepGreen),
+            label: 'Orders',
           ),
         ],
       ),
