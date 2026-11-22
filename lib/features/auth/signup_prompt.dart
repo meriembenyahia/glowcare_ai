@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/primary_button.dart';
 import 'auth_provider.dart';
-import 'login_screen.dart';
+import 'signup_screen.dart';
 
 /// نادي هذي الدالة في initState متاع Home
 Timer? startSignupPromptTimer(BuildContext context, WidgetRef ref) {
@@ -57,7 +57,7 @@ void _showSignupDialog(BuildContext context) {
                 Navigator.of(context).pop();
                 // الانتقال لصفحة Login أو Signup
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const SignupScreen()),
                 );
               },
             ),

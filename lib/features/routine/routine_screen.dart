@@ -44,23 +44,26 @@ class _RoutineScreenState extends State<RoutineScreen> {
 
   void _showAddStepDialog() {
     final controller = TextEditingController();
+    final colors = AppThemeColors.of(context);
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Add Routine Step',
           style: GoogleFonts.playfairDisplay(
             fontWeight: FontWeight.w700,
-            color: AppColors.darkText,
+            color: colors.text,
           ),
         ),
         content: TextField(
           controller: controller,
+          style: TextStyle(color: colors.text),
           decoration: InputDecoration(
             hintText: 'Step name (e.g., Face Oil)',
-            fillColor: AppColors.white,
+            fillColor: colors.inputFill,
             filled: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -71,11 +74,11 @@ class _RoutineScreenState extends State<RoutineScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: AppColors.mutedText)),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: colors.mutedText)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.deepGreen,
+              backgroundColor: colors.primary,
               foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -105,9 +108,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
     final total = steps.length;
     final doneCount = steps.where((s) => s.isCompleted).length;
     final double progress = total > 0 ? (doneCount / total).clamp(0.0, 1.0) : 0.0;
+    final colors = AppThemeColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -126,7 +130,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.darkText,
+                          color: colors.text,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -134,21 +138,21 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         'Track your skincare steps every day',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: AppColors.mutedText,
+                          color: colors.mutedText,
                         ),
                       ),
                     ],
                   ),
                   IconButton(
                     onPressed: _showAddStepDialog,
-                    icon: const Icon(Icons.add_circle, color: AppColors.deepGreen, size: 32),
+                    icon: Icon(Icons.add_circle, color: colors.primary, size: 32),
                     tooltip: 'Add Step',
                   ),
                 ],
               ),
               const SizedBox(height: 16),
 
-              // زر التبديل بين الصباح والليل (Morning / Night Tabs)
+              // زر التبديل بين الصباح والليل
               Row(
                 children: [
                   Expanded(
@@ -174,11 +178,11 @@ class _RoutineScreenState extends State<RoutineScreen> {
               ),
               const SizedBox(height: 18),
 
-              // بطاقة النسبة المئوية والتطور (Progress Card)
+              // بطاقة النسبة المئوية والتطور
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: colors.cardBackground,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -198,7 +202,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.darkText,
+                            color: colors.text,
                           ),
                         ),
                         Text(
@@ -206,7 +210,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.deepGreen,
+                            color: colors.primary,
                           ),
                         ),
                       ],
@@ -217,8 +221,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 10,
-                        backgroundColor: AppColors.cream,
-                        color: AppColors.deepGreen,
+                        backgroundColor: colors.background,
+                        color: colors.primary,
                       ),
                     ),
                   ],
@@ -233,7 +237,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         child: Text(
                           'No routine steps yet.\nTap + to add one!',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: AppColors.mutedText),
+                          style: GoogleFonts.poppins(color: colors.mutedText),
                         ),
                       )
                     : ListView.separated(
@@ -244,7 +248,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
 
                           return Container(
                             decoration: BoxDecoration(
-                              color: AppColors.white,
+                              color: colors.cardBackground,
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
@@ -256,7 +260,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                             ),
                             child: CheckboxListTile(
                               value: step.isCompleted,
-                              activeColor: AppColors.deepGreen,
+                              activeColor: colors.primary,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                               controlAffinity: ListTileControlAffinity.leading,
@@ -265,7 +269,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: step.isCompleted ? AppColors.mutedText : AppColors.darkText,
+                                  color: step.isCompleted ? colors.mutedText : colors.text,
                                   decoration: step.isCompleted ? TextDecoration.lineThrough : null,
                                 ),
                               ),
@@ -302,18 +306,20 @@ class _RoutineScreenState extends State<RoutineScreen> {
     required bool isMorningTab,
   }) {
     final isSelected = _isMorning == isMorningTab;
+    final colors = AppThemeColors.of(context);
+
     return GestureDetector(
       onTap: () => setState(() => _isMorning = isMorningTab),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         height: 48,
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.deepGreen : AppColors.white,
+          color: isSelected ? colors.primary : colors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: AppColors.deepGreen.withValues(alpha: 0.3),
+                color: colors.primary.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -324,7 +330,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected ? AppColors.white : AppColors.darkText,
+              color: isSelected ? AppColors.white : colors.text,
               size: 20,
             ),
             const SizedBox(width: 6),
@@ -333,7 +339,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? AppColors.white : AppColors.darkText,
+                color: isSelected ? AppColors.white : colors.text,
               ),
             ),
           ],

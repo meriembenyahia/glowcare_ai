@@ -7,19 +7,26 @@ class SupabaseService {
   static const String supabaseUrl = 'https://ppphfquwtjyacbeewjyc.supabase.co';
   static const String supabaseAnonKey = 'sb_publishable_u2Jm05Gm3t0Tx04GPOfdSA_h3RSumi-';
 
+  static bool _ready = false;
+
   static Future<void> initialize() async {
-    // نتفادو الكراش يلا مزال مابدلوش المفاتيح
-    if (supabaseUrl == 'YOUR_SUPABASE_URL') {
+    // نتفادو الكراش يلا مزال مابدلوش المفاتيح أو فشل الاتصال
+    if (supabaseUrl == 'YOUR_SUPABASE_URL' || supabaseAnonKey.isEmpty) {
       return;
     }
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    );
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+      );
+      _ready = true;
+    } catch (_) {
+      _ready = false;
+    }
   }
 
   static SupabaseClient get client => Supabase.instance.client;
-  static bool get isInitialized => supabaseUrl != 'YOUR_SUPABASE_URL';
+  static bool get isInitialized => _ready;
 
   // ================= 🔐 AUTHENTICATION =================
   static User? get currentUser => isInitialized ? client.auth.currentUser : null;
@@ -27,12 +34,19 @@ class SupabaseService {
   static Future<AuthResponse?> signUp({
     required String email,
     required String password,
+    String name = '',
   }) async {
     if (!isInitialized) return null;
     return await client.auth.signUp(
       email: email,
       password: password,
+      data: name.isEmpty ? null : {'full_name': name},
     );
+  }
+
+  static Future<void> resetPassword(String email) async {
+    if (!isInitialized) return;
+    await client.auth.resetPasswordForEmail(email);
   }
 
   static Future<AuthResponse?> signIn({

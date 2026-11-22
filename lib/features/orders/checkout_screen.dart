@@ -23,7 +23,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _address = TextEditingController();
   String? _wilaya;
 
-  static const double _delivery = 500; // دج، نبدلوها إذا حبيتي
+  static const double _delivery = 500;
 
   @override
   void dispose() {
@@ -77,14 +77,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final items = ref.watch(cartProvider);
     final subtotal = ref.read(cartProvider.notifier).subtotal;
+    final colors = AppThemeColors.of(context);
 
     return Scaffold(
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        iconTheme: const IconThemeData(color: AppColors.darkText),
+        backgroundColor: colors.background,
+        iconTheme: IconThemeData(color: colors.text),
         title: Text('Checkout',
             style: GoogleFonts.poppins(
-                fontSize: 16, color: AppColors.darkText)),
+                fontSize: 16, color: colors.text)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -95,15 +97,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             children: [
               Text('Delivery information',
                   style: GoogleFonts.poppins(
-                      fontSize: 15, fontWeight: FontWeight.w600)),
+                      fontSize: 15, fontWeight: FontWeight.w600, color: colors.text)),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _firstName,
-                      decoration:
-                      const InputDecoration(hintText: 'First name'),
+                      style: TextStyle(color: colors.text),
+                      decoration: InputDecoration(
+                        hintText: 'First name',
+                        fillColor: colors.inputFill,
+                        filled: true,
+                      ),
                       validator: (v) => _required(v, 'First name'),
                     ),
                   ),
@@ -111,8 +117,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _lastName,
-                      decoration:
-                      const InputDecoration(hintText: 'Last name'),
+                      style: TextStyle(color: colors.text),
+                      decoration: InputDecoration(
+                        hintText: 'Last name',
+                        fillColor: colors.inputFill,
+                        filled: true,
+                      ),
                       validator: (v) => _required(v, 'Last name'),
                     ),
                   ),
@@ -122,17 +132,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(hintText: 'Phone number'),
+                style: TextStyle(color: colors.text),
+                decoration: InputDecoration(
+                  hintText: 'Phone number',
+                  fillColor: colors.inputFill,
+                  filled: true,
+                ),
                 validator: _validatePhone,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _wilaya,
                 isExpanded: true,
-                decoration: const InputDecoration(hintText: 'Wilaya'),
+                dropdownColor: colors.cardBackground,
+                style: TextStyle(color: colors.text),
+                decoration: InputDecoration(
+                  hintText: 'Wilaya',
+                  fillColor: colors.inputFill,
+                  filled: true,
+                ),
                 items: [
                   for (final w in wilayas)
-                    DropdownMenuItem(value: w, child: Text(w)),
+                    DropdownMenuItem(value: w, child: Text(w, style: TextStyle(color: colors.text))),
                 ],
                 onChanged: (v) => setState(() => _wilaya = v),
                 validator: (v) => v == null ? 'Please select a wilaya' : null,
@@ -141,8 +162,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               TextFormField(
                 controller: _address,
                 maxLines: 2,
-                decoration:
-                const InputDecoration(hintText: 'Delivery address'),
+                style: TextStyle(color: colors.text),
+                decoration: InputDecoration(
+                  hintText: 'Delivery address',
+                  fillColor: colors.inputFill,
+                  filled: true,
+                ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return 'Address is required';
@@ -156,7 +181,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               // ملخص الطلب
               Text('Order summary',
                   style: GoogleFonts.poppins(
-                      fontSize: 15, fontWeight: FontWeight.w600)),
+                      fontSize: 15, fontWeight: FontWeight.w600, color: colors.text)),
               const SizedBox(height: 8),
               for (final e in items)
                 Padding(
@@ -166,22 +191,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     children: [
                       Expanded(
                         child: Text('${e.product.name} x${e.quantity}',
-                            style: GoogleFonts.poppins(fontSize: 12)),
+                            style: GoogleFonts.poppins(fontSize: 12, color: colors.text)),
                       ),
                       Text(
                           '${(e.product.price * e.quantity).toStringAsFixed(0)} DA',
-                          style: GoogleFonts.poppins(fontSize: 12)),
+                          style: GoogleFonts.poppins(fontSize: 12, color: colors.text)),
                     ],
                   ),
                 ),
               const Divider(),
-              _row('Subtotal', subtotal),
-              _row('Delivery', _delivery),
-              _row('Total', subtotal + _delivery, bold: true),
+              _row(context, 'Subtotal', subtotal),
+              _row(context, 'Delivery', _delivery),
+              _row(context, 'Total', subtotal + _delivery, bold: true),
               const SizedBox(height: 8),
               Text('Payment: Cash on delivery',
                   style: GoogleFonts.poppins(
-                      fontSize: 12, color: AppColors.mutedText)),
+                      fontSize: 12, color: colors.mutedText)),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: items.isEmpty ? null : _confirm,
@@ -194,10 +219,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _row(String label, double value, {bool bold = false}) {
+  Widget _row(BuildContext context, String label, double value, {bool bold = false}) {
+    final colors = AppThemeColors.of(context);
     final style = GoogleFonts.poppins(
       fontSize: bold ? 14 : 12,
       fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+      color: bold ? colors.primary : colors.text,
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),

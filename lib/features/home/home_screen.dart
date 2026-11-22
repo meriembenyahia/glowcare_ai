@@ -5,10 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/product_image.dart';
+import '../ai_advisor/ai_skin_analysis_screen.dart';
 import '../auth/auth_provider.dart';
-import '../auth/login_screen.dart';
+import '../auth/signup_screen.dart';
 import '../auth/signup_prompt.dart';
 import '../cart/cart_screen.dart';
+import '../profile/profile_screen.dart';
 import '../shop/product.dart';
 import '../shop/product_details_screen.dart';
 import '../shop/product_provider.dart';
@@ -56,9 +58,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final isGuest = ref.watch(authProvider) == AuthStatus.guest;
     final productsAsync = ref.watch(productsProvider);
+    final colors = AppThemeColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -79,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.darkText,
+                          color: colors.text,
                         ),
                       ),
                     ],
@@ -87,33 +90,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.shopping_bag_outlined,
-                            color: AppColors.darkText),
+                        icon: Icon(Icons.shopping_bag_outlined, color: colors.text),
                         onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                              builder: (_) => const CartScreen()),
+                          MaterialPageRoute(builder: (_) => const CartScreen()),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.person_outline, color: colors.text),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ProfileScreen()),
                         ),
                       ),
                       if (isGuest)
                         ElevatedButton(
                           onPressed: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const LoginScreen()),
+                              MaterialPageRoute(builder: (_) => const SignupScreen()),
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.deepGreen,
+                            backgroundColor: colors.primary,
                             foregroundColor: AppColors.white,
                             minimumSize: const Size(0, 34),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: const Text('Sign Up',
-                              style: TextStyle(fontSize: 11)),
+                          child: const Text('Sign Up', style: TextStyle(fontSize: 11)),
                         ),
                     ],
                   ),
@@ -125,17 +129,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               TextField(
                 controller: _searchController,
                 onSubmitted: (q) => _navigateToShop('All', q),
+                style: TextStyle(color: colors.text),
                 decoration: InputDecoration(
                   hintText: 'Search for products, skincare...',
                   prefixIcon: IconButton(
-                    icon: const Icon(Icons.search,
-                        color: AppColors.mutedText, size: 20),
+                    icon: Icon(Icons.search, color: colors.mutedText, size: 20),
                     onPressed: () => _navigateToShop('All', _searchController.text),
                   ),
-                  suffixIcon: const Icon(Icons.tune,
-                      color: AppColors.mutedText, size: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.tune, color: colors.mutedText, size: 20),
+                    onPressed: () => _navigateToShop('All', _searchController.text),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  fillColor: AppColors.white,
+                  fillColor: colors.inputFill,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -145,8 +151,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: 14),
 
-              // 3. البانر الرئيسي بتصميم عالي الجودة مع صورة منتج وتفعيل زر Shop Now
-              _banner(),
+              // 3. البانر الرئيسي
+              _banner(colors),
+              const SizedBox(height: 14),
+
+              // AI Skin Analysis Card
+              _aiBanner(colors),
               const SizedBox(height: 16),
 
               // 4. الفئات الأربعة
@@ -186,21 +196,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.darkText,
+                      color: colors.text,
                     ),
                   ),
                   InkWell(
                     onTap: () => _navigateToShop(),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       child: Text(
                         'See All →',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.deepGreen,
+                          color: colors.primary,
                         ),
                       ),
                     ),
@@ -213,29 +222,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SizedBox(
                 height: 235,
                 child: productsAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: AppColors.deepGreen),
+                  loading: () => Center(
+                    child: CircularProgressIndicator(color: colors.primary),
                   ),
                   error: (error, stack) => Center(
                     child: TextButton.icon(
                       onPressed: () => ref.invalidate(productsProvider),
-                      icon: const Icon(Icons.refresh, color: AppColors.deepGreen),
+                      icon: Icon(Icons.refresh, color: colors.primary),
                       label: Text(
                         'Tap to retry',
-                        style: GoogleFonts.poppins(color: AppColors.deepGreen),
+                        style: GoogleFonts.poppins(color: colors.primary),
                       ),
                     ),
                   ),
                   data: (products) => ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: products.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(width: 12),
+                    separatorBuilder: (context, index) => const SizedBox(width: 12),
                     itemBuilder: (context, i) => GestureDetector(
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) =>
-                              ProductDetailsScreen(product: products[i]),
+                          builder: (_) => ProductDetailsScreen(product: products[i]),
                         ),
                       ),
                       child: _ProductCard(product: products[i]),
@@ -246,13 +253,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               const SizedBox(height: 20),
 
-              // 6. قسم المنتجات الشائعة العمودي (تغطية كل الشاشة ومنع أي فراغ)
+              // 6. قسم المنتجات الشائعة العمودي
               Text(
                 'Trending Products',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.darkText,
+                  color: colors.text,
                 ),
               ),
               const SizedBox(height: 10),
@@ -278,7 +285,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.white,
+                            color: colors.cardBackground,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -306,14 +313,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.darkText,
+                                        color: colors.text,
                                       ),
                                     ),
                                     Text(
                                       '${p.brand} · ${p.category}',
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
-                                        color: AppColors.mutedText,
+                                        color: colors.mutedText,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -322,14 +329,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.deepGreen,
+                                        color: colors.primary,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.chevron_right,
-                                  color: AppColors.mutedText),
+                              Icon(Icons.chevron_right, color: colors.mutedText),
                             ],
                           ),
                         ),
@@ -345,7 +351,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _banner() {
+  Widget _banner(AppThemeColors colors) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -373,7 +379,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     height: 1.2,
-                    color: AppColors.darkText,
+                    color: colors.text,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -381,14 +387,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   'Discover top skincare & makeup formulas',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: AppColors.mutedText,
+                    color: colors.mutedText,
                   ),
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () => _navigateToShop(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.deepGreen,
+                    backgroundColor: colors.primary,
                     foregroundColor: AppColors.white,
                     minimumSize: const Size(0, 36),
                     padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -403,8 +409,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-
-          // صورة منتج حقيقية وأنيقة فـ اليمين بدون مربع عشوائي
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -412,7 +416,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               height: 125,
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: colors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -433,6 +437,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
+
+  Widget _aiBanner(AppThemeColors colors) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const AiSkinAnalysisScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colors.cardBackground,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.sageGreen.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.auto_awesome, color: colors.primary, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI Skin Consultation',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colors.text,
+                    ),
+                  ),
+                  Text(
+                    'Take a 1-minute AI quiz to get custom skincare picks',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: colors.mutedText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: colors.primary),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Category extends StatelessWidget {
@@ -448,6 +510,8 @@ class _Category extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppThemeColors.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -456,7 +520,7 @@ class _Category extends StatelessWidget {
             width: 62,
             height: 62,
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: colors.cardBackground,
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
@@ -466,7 +530,7 @@ class _Category extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(icon, color: AppColors.deepGreen, size: 26),
+            child: Icon(icon, color: colors.primary, size: 26),
           ),
           const SizedBox(height: 6),
           Text(
@@ -474,7 +538,7 @@ class _Category extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: AppColors.darkText,
+              color: colors.text,
             ),
           ),
         ],
@@ -490,12 +554,13 @@ class _ProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFav = ref.watch(wishlistProvider).contains(product.id);
+    final colors = AppThemeColors.of(context);
 
     return Container(
       width: 155,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -515,7 +580,7 @@ class _ProductCard extends ConsumerWidget {
               child: Icon(
                 isFav ? Icons.favorite : Icons.favorite_border,
                 size: 20,
-                color: isFav ? Colors.redAccent : AppColors.mutedText,
+                color: isFav ? Colors.redAccent : colors.mutedText,
               ),
             ),
           ),
@@ -532,14 +597,14 @@ class _ProductCard extends ConsumerWidget {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.darkText,
+              color: colors.text,
             ),
           ),
           Text(
             product.brand,
             style: GoogleFonts.poppins(
               fontSize: 10,
-              color: AppColors.mutedText,
+              color: colors.mutedText,
             ),
           ),
           const SizedBox(height: 6),
@@ -551,7 +616,7 @@ class _ProductCard extends ConsumerWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.deepGreen,
+                  color: colors.primary,
                 ),
               ),
               Row(
@@ -560,7 +625,7 @@ class _ProductCard extends ConsumerWidget {
                   Text(
                     ' ${product.rating}',
                     style: GoogleFonts.poppins(
-                        fontSize: 10, fontWeight: FontWeight.w500),
+                        fontSize: 10, fontWeight: FontWeight.w500, color: colors.text),
                   ),
                 ],
               ),

@@ -22,6 +22,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
   Widget build(BuildContext context) {
     final product = widget.product;
     final isFavorite = ref.watch(wishlistProvider).contains(product.id);
+    final colors = AppThemeColors.of(context);
     final ingredientsText = product.ingredients.isNotEmpty
         ? product.ingredients.join(', ')
         : 'Water, Glycerin, Niacinamide, Hyaluronic Acid, Ceramides 1, 3, 6-II, Centella Asiatica Extract.';
@@ -29,9 +30,9 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
+          backgroundColor: colors.background,
           elevation: 0,
           centerTitle: true,
           title: Text(
@@ -39,15 +40,15 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             style: GoogleFonts.poppins(
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: AppColors.darkText,
+              color: colors.text,
             ),
           ),
-          iconTheme: const IconThemeData(color: AppColors.darkText),
+          iconTheme: IconThemeData(color: colors.text),
           actions: [
             IconButton(
               icon: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: isFavorite ? Colors.redAccent : AppColors.darkText,
+                color: isFavorite ? Colors.redAccent : colors.text,
               ),
               onPressed: () => ref.read(wishlistProvider.notifier).toggle(product.id),
             ),
@@ -63,13 +64,13 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. حاوية صورة المنتج الكبيرة الفوق مطابقة للموكاب
+                      // 1. حاوية صورة المنتج الكبيرة
                       Container(
                         height: 220,
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: colors.cardBackground,
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
@@ -89,7 +90,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // نقاط مؤشر الصور (Carousel Indicator Dots)
+                      // نقاط مؤشر الصور
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(4, (index) {
@@ -103,8 +104,8 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                               width: isActive ? 18 : 7,
                               decoration: BoxDecoration(
                                 color: isActive
-                                    ? AppColors.deepGreen
-                                    : AppColors.mutedText.withValues(alpha: 0.3),
+                                    ? colors.primary
+                                    : colors.mutedText.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -127,7 +128,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                   style: GoogleFonts.playfairDisplay(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.darkText,
+                                    color: colors.text,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -136,7 +137,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
-                                    color: AppColors.mutedText,
+                                    color: colors.mutedText,
                                   ),
                                 ),
                               ],
@@ -146,10 +147,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.white,
+                              color: colors.cardBackground,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: AppColors.mutedText.withValues(alpha: 0.2),
+                                color: colors.mutedText.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Text(
@@ -157,7 +158,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.mutedText,
+                                color: colors.mutedText,
                               ),
                             ),
                           ),
@@ -178,7 +179,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                             '${product.rating} (2.4k reviews)',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: AppColors.mutedText,
+                              color: colors.mutedText,
                             ),
                           ),
                         ],
@@ -191,16 +192,16 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.deepGreen,
+                          color: colors.primary,
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // 5. التبويبات الثلاثة (Details, Ingredients, Reviews)
+                      // 5. التبويبات الثلاثة
                       TabBar(
-                        labelColor: AppColors.deepGreen,
-                        unselectedLabelColor: AppColors.mutedText,
-                        indicatorColor: AppColors.deepGreen,
+                        labelColor: colors.primary,
+                        unselectedLabelColor: colors.mutedText,
+                        indicatorColor: colors.primary,
                         indicatorWeight: 2.5,
                         labelStyle: GoogleFonts.poppins(
                           fontSize: 13,
@@ -214,7 +215,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // محتوى التبويبات مع مميزات المنتج (Pills)
+                      // محتوى التبويبات
                       SizedBox(
                         height: 160,
                         child: TabBarView(
@@ -239,7 +240,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                     style: GoogleFonts.poppins(
                                       fontSize: 13,
                                       height: 1.6,
-                                      color: AppColors.darkText,
+                                      color: colors.text,
                                     ),
                                   ),
                                 ],
@@ -253,7 +254,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   height: 1.6,
-                                  color: AppColors.darkText,
+                                  color: colors.text,
                                 ),
                               ),
                             ),
@@ -267,7 +268,8 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                     '⭐⭐⭐⭐⭐ (4.8/5)',
                                     style: GoogleFonts.poppins(
                                         fontSize: 14,
-                                        fontWeight: FontWeight.w600),
+                                        fontWeight: FontWeight.w600,
+                                        color: colors.text),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -275,7 +277,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                     style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontStyle: FontStyle.italic,
-                                        color: AppColors.mutedText),
+                                        color: colors.mutedText),
                                   ),
                                 ],
                               ),
@@ -293,7 +295,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: colors.cardBackground,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -311,13 +313,13 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('${product.name} added to cart!'),
-                          backgroundColor: AppColors.deepGreen,
+                          backgroundColor: colors.primary,
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.deepGreen,
+                      backgroundColor: colors.primary,
                       foregroundColor: AppColors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -349,23 +351,25 @@ class _FeaturePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppThemeColors.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.sageGreen.withValues(alpha: 0.15),
+        color: colors.primary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.deepGreen),
+          Icon(icon, size: 14, color: colors.primary),
           const SizedBox(width: 4),
           Text(
             label,
             style: GoogleFonts.poppins(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: AppColors.deepGreen,
+              color: colors.primary,
             ),
           ),
         ],

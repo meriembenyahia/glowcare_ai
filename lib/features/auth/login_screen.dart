@@ -6,6 +6,7 @@ import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/app_text_field.dart';
 import '../../core/theme/widgets/primary_button.dart';
 import 'auth_provider.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +16,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -26,31 +28,61 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  String? _emailValidator(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) return 'Email is required';
+    final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    if (!ok) return 'Enter a valid email address';
+    return null;
+  }
 
-    if (email.isEmpty || password.isEmpty) {
-      ref.read(authProvider.notifier).logIn();
-      if (mounted) Navigator.of(context).pop();
-      return;
-    }
+  String? _passwordValidator(String? value) {
+    if (value == null || value.isEmpty) return 'Password is required';
+    if (value.length < 6) return 'Password must be at least 6 characters';
+    return null;
+  }
+
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final error = await ref
-        .read(authProvider.notifier)
-        .signInWithEmail(email, password);
+    final error = await ref.read(authProvider.notifier).signInWithEmail(
+          _emailController.text,
+          _passwordController.text,
+        );
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (mounted) {
-      if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
-        );
-      } else {
-        Navigator.of(context).pop();
-      }
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+      );
+      return;
     }
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text.trim();
+    final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter your email first, then tap Forgot password.'),
+        ),
+      );
+      return;
+    }
+    final error =
+        await ref.read(authProvider.notifier).sendPasswordReset(email);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          error ?? 'If this email is registered, a reset link has been sent.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -64,7 +96,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
+          child: Form(
+            key: _formKey,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
@@ -115,6 +149,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 hint: 'Email address',
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                validator: _emailValidator,
               ),
               const SizedBox(height: 14),
               AppTextField(
@@ -122,11 +158,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 hint: 'Password',
                 icon: Icons.lock_outline,
                 isPassword: true,
+                textInputAction: TextInputAction.done,
+                validator: _passwordValidator,
               ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _forgotPassword,
                   child: Text(
                     'Forgot password?',
                     style: GoogleFonts.poppins(
@@ -138,53 +176,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 8),
               PrimaryButton(
-                label: _isLoading ? 'Connecting...' : 'Log In',
-                onPressed: _isLoading ? () {} : _handleLogin,
-              ),
-              const SizedBox(height: 14),
-              Center(
-                child: Text(
-                  'or',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: AppColors.mutedText,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(54),
-                  backgroundColor: AppColors.white,
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'G',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF4285F4),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Continue with Google',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: AppColors.darkText,
-                      ),
-                    ),
-                  ],
-                ),
+                label: 'Log In',
+                isLoading: _isLoading,
+                onPressed: _handleLogin,
               ),
               const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const SignupScreen()),
+                    );
+                  },
+                  child: Text(
+                    'New here? Create an account',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.deepGreen,
+                    ),
+                  ),
+                ),
+              ),
               Center(
                 child: TextButton(
                   onPressed: () {
@@ -203,6 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 24),
             ],
+            ),
           ),
         ),
       ),

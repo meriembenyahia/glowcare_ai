@@ -16,48 +16,51 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
-  final List<Widget> _pages = [
-    const HomeScreen(),
-    const ShopScreen(),
-    const IngredientCheckerScreen(),
-    const RoutineScreen(),
-    const OrderHistoryScreen(),
+  final List<Widget> _pages = const [
+    HomeScreen(),
+    ShopScreen(),
+    IngredientCheckerScreen(),
+    RoutineScreen(),
+    OrderHistoryScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppThemeColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: colors.background,
       body: IndexedStack(index: _index, children: _pages),
       bottomNavigationBar: NavigationBar(
-        backgroundColor: AppColors.background,
-        indicatorColor: AppColors.cream,
+        backgroundColor: colors.background,
+        indicatorColor: isDark ? colors.cardBackground : AppColors.cream,
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppColors.deepGreen),
+            icon: Icon(Icons.home_outlined, color: colors.mutedText),
+            selectedIcon: Icon(Icons.home, color: colors.primary),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.shopping_bag_outlined),
-            selectedIcon: Icon(Icons.shopping_bag, color: AppColors.deepGreen),
+            icon: Icon(Icons.shopping_bag_outlined, color: colors.mutedText),
+            selectedIcon: Icon(Icons.shopping_bag, color: colors.primary),
             label: 'Shop',
           ),
           NavigationDestination(
-            icon: Icon(Icons.science_outlined),
-            selectedIcon: Icon(Icons.science, color: AppColors.deepGreen),
+            icon: Icon(Icons.science_outlined, color: colors.mutedText),
+            selectedIcon: Icon(Icons.science, color: colors.primary),
             label: 'Beauty Lab',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon:
-            Icon(Icons.calendar_month, color: AppColors.deepGreen),
+            icon: Icon(Icons.calendar_month_outlined, color: colors.mutedText),
+            selectedIcon: Icon(Icons.calendar_month, color: colors.primary),
             label: 'Routine',
           ),
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long, color: AppColors.deepGreen),
+            icon: Icon(Icons.receipt_long_outlined, color: colors.mutedText),
+            selectedIcon: Icon(Icons.receipt_long, color: colors.primary),
             label: 'Orders',
           ),
         ],

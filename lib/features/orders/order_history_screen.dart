@@ -10,26 +10,28 @@ class OrderHistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final orders = ref.watch(ordersProvider);
+    final colors = AppThemeColors.of(context);
 
     return Scaffold(
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        iconTheme: const IconThemeData(color: AppColors.darkText),
+        backgroundColor: colors.background,
+        iconTheme: IconThemeData(color: colors.text),
         title: Text('My Orders',
             style: GoogleFonts.poppins(
-                fontSize: 16, color: AppColors.darkText)),
+                fontSize: 16, color: colors.text)),
       ),
       body: orders.isEmpty
           ? Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.receipt_long_outlined,
-                size: 64, color: AppColors.mutedText),
+            Icon(Icons.receipt_long_outlined,
+                size: 64, color: colors.mutedText),
             const SizedBox(height: 12),
             Text('No orders yet',
                 style: GoogleFonts.poppins(
-                    fontSize: 15, color: AppColors.mutedText)),
+                    fontSize: 15, color: colors.mutedText)),
           ],
         ),
       )
@@ -46,7 +48,7 @@ class OrderHistoryScreen extends ConsumerWidget {
           return Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: colors.cardBackground,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -58,25 +60,26 @@ class OrderHistoryScreen extends ConsumerWidget {
                     Text('Order #${o.id}',
                         style: GoogleFonts.poppins(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600)),
+                            fontWeight: FontWeight.w600,
+                            color: colors.text)),
                     Text(dateText,
                         style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: AppColors.mutedText)),
+                            color: colors.mutedText)),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text('${o.items.length} item(s) · ${o.wilaya}',
                     style: GoogleFonts.poppins(
-                        fontSize: 12, color: AppColors.mutedText)),
+                        fontSize: 12, color: colors.mutedText)),
                 const SizedBox(height: 6),
                 for (final e in o.items)
                   Text('• ${e.product.name} x${e.quantity}',
-                      style: GoogleFonts.poppins(fontSize: 12)),
+                      style: GoogleFonts.poppins(fontSize: 12, color: colors.text)),
                 const SizedBox(height: 8),
                 Text('Total: ${o.total.toStringAsFixed(0)} DA',
                     style: GoogleFonts.poppins(
-                        fontSize: 13, fontWeight: FontWeight.w700)),
+                        fontSize: 13, fontWeight: FontWeight.w700, color: colors.primary)),
               ],
             ),
           );

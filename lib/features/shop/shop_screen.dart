@@ -23,9 +23,11 @@ class ShopScreen extends ConsumerStatefulWidget {
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
   static const _categories = ['All', 'Favorites ❤️', 'Skincare', 'Makeup', 'Hair Care', 'Fragrance'];
+  static const _sorts = ['Featured', 'Price ↑', 'Price ↓', 'Top rated'];
   late final TextEditingController _searchController;
   late String _selected;
   late String _query;
+  String _sort = 'Featured';
 
   @override
   void initState() {
@@ -58,9 +60,10 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   @override
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(productsProvider);
+    final colors = AppThemeColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -72,7 +75,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.darkText,
+                  color: colors.text,
                 ),
               ),
               const SizedBox(height: 12),
@@ -81,12 +84,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               TextField(
                 controller: _searchController,
                 onChanged: (v) => setState(() => _query = v),
+                style: TextStyle(color: colors.text),
                 decoration: InputDecoration(
                   hintText: 'Search products or brands...',
-                  prefixIcon: const Icon(Icons.search,
-                      color: AppColors.mutedText, size: 20),
+                  prefixIcon: Icon(Icons.search, color: colors.mutedText, size: 20),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  fillColor: AppColors.white,
+                  fillColor: colors.inputFill,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -110,15 +113,43 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       label: Text(cat),
                       selected: active,
                       onSelected: (_) => setState(() => _selected = cat),
-                      selectedColor: AppColors.deepGreen,
-                      backgroundColor: AppColors.white,
+                      selectedColor: colors.primary,
+                      backgroundColor: colors.cardBackground,
                       side: BorderSide.none,
                       labelStyle: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                        color: active ? AppColors.white : AppColors.darkText,
+                        color: active ? AppColors.white : colors.text,
                       ),
                       showCheckmark: false,
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 34,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _sorts.length,
+                  separatorBuilder: (_, index) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    final sort = _sorts[i];
+                    final active = sort == _sort;
+                    return ChoiceChip(
+                      label: Text(sort),
+                      selected: active,
+                      onSelected: (_) => setState(() => _sort = sort),
+                      selectedColor: colors.primary.withValues(alpha: 0.3),
+                      backgroundColor: colors.cardBackground,
+                      side: BorderSide.none,
+                      labelStyle: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                        color: colors.text,
+                      ),
+                      showCheckmark: false,
+                      visualDensity: VisualDensity.compact,
                     );
                   },
                 ),
@@ -128,8 +159,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               // الشبكة مع حالات التحميل والخطأ والبيانات
               Expanded(
                 child: productsAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: AppColors.deepGreen),
+                  loading: () => Center(
+                    child: CircularProgressIndicator(color: colors.primary),
                   ),
                   error: (error, stack) => Center(
                     child: Column(
@@ -138,12 +169,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                         Text(
                           'Failed to load products.\nCheck your internet connection.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: AppColors.mutedText),
+                          style: GoogleFonts.poppins(color: colors.mutedText),
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.deepGreen,
+                            backgroundColor: colors.primary,
                             foregroundColor: AppColors.white,
                           ),
                           onPressed: () => ref.invalidate(productsProvider),
@@ -166,13 +197,21 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       return matchCat && matchQuery;
                     }).toList();
 
+                    if (_sort == 'Price ↑') {
+                      products.sort((a, b) => a.price.compareTo(b.price));
+                    } else if (_sort == 'Price ↓') {
+                      products.sort((a, b) => b.price.compareTo(a.price));
+                    } else if (_sort == 'Top rated') {
+                      products.sort((a, b) => b.rating.compareTo(a.rating));
+                    }
+
                     if (products.isEmpty) {
                       return Center(
                         child: Text(
                           _selected == 'Favorites ❤️'
                               ? 'No favorite products yet ❤️'
                               : 'No products found',
-                          style: GoogleFonts.poppins(color: AppColors.mutedText),
+                          style: GoogleFonts.poppins(color: colors.mutedText),
                         ),
                       );
                     }
@@ -215,11 +254,12 @@ class _ShopCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFav = ref.watch(wishlistProvider).contains(product.id);
+    final colors = AppThemeColors.of(context);
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -239,7 +279,7 @@ class _ShopCard extends ConsumerWidget {
               child: Icon(
                 isFav ? Icons.favorite : Icons.favorite_border,
                 size: 20,
-                color: isFav ? Colors.redAccent : AppColors.mutedText,
+                color: isFav ? Colors.redAccent : colors.mutedText,
               ),
             ),
           ),
@@ -256,12 +296,12 @@ class _ShopCard extends ConsumerWidget {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.darkText,
+              color: colors.text,
             ),
           ),
           Text(
             product.brand,
-            style: GoogleFonts.poppins(fontSize: 10, color: AppColors.mutedText),
+            style: GoogleFonts.poppins(fontSize: 10, color: colors.mutedText),
           ),
           const SizedBox(height: 6),
           Row(
@@ -272,7 +312,7 @@ class _ShopCard extends ConsumerWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.deepGreen,
+                  color: colors.primary,
                 ),
               ),
               Row(
@@ -280,7 +320,7 @@ class _ShopCard extends ConsumerWidget {
                   const Icon(Icons.star, size: 12, color: Colors.amber),
                   Text(' ${product.rating}',
                       style: GoogleFonts.poppins(
-                          fontSize: 10, fontWeight: FontWeight.w500)),
+                          fontSize: 10, fontWeight: FontWeight.w500, color: colors.text)),
                 ],
               ),
             ],
