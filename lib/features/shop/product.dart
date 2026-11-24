@@ -21,31 +21,48 @@ class Product {
     this.ingredients = const [],
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'brand': brand,
+    'price': price,
+    'rating': rating,
+    'category': category,
+    'image': image,
+    'description': description,
+    'ingredients': ingredients,
+  };
+
   factory Product.fromJson(Map<String, dynamic> json) {
-    // مطابقة تصنيفات الـ API مع تصنيفات التطبيق تاعك
-    final rawCat = (json['category'] ?? '').toString().toLowerCase();
-    String mappedCategory = 'Skincare';
-    if (rawCat == 'beauty') {
+    final rawCat = (json['category'] ?? '').toString();
+    String mappedCategory = rawCat;
+    if (rawCat.toLowerCase() == 'beauty') {
       mappedCategory = 'Makeup';
-    } else if (rawCat == 'fragrances') {
+    } else if (rawCat.toLowerCase() == 'fragrances') {
       mappedCategory = 'Fragrance';
+    } else if (mappedCategory.isEmpty) {
+      mappedCategory = 'Skincare';
     }
 
-    // تحويل السعر من الدولار للدينار وتقريبه
-    final usdPrice = (json['price'] as num?)?.toDouble() ?? 10.0;
-    final daPrice = (usdPrice * 200).roundToDouble();
+    final double priceVal = (json['price'] as num?)?.toDouble() ?? 0.0;
+    final List<String> ings = [];
+    final rawIng = json['ingredients'] ?? json['tags'];
+    if (rawIng is List) {
+      for (final i in rawIng) {
+        if (i != null) ings.add(i.toString());
+      }
+    }
 
     return Product(
-      id: json['id'].toString(),
-      name: json['title'] ?? '',
-      brand: json['brand'] ?? 'GlowCare',
-      price: daPrice,
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? json['title'] ?? '').toString(),
+      brand: (json['brand'] ?? 'GlowCare').toString(),
+      price: priceVal,
       rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
       category: mappedCategory,
-      image: json['thumbnail'] ?? '',
-      description: json['description'] ?? '',
-      // DummyJSON يرجع tags، نستعملوهم كمكونات/خصائص
-      ingredients: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      image: (json['image'] ?? json['thumbnail'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      ingredients: ings,
     );
   }
 }

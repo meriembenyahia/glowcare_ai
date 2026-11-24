@@ -12,6 +12,7 @@ class Order {
   final double subtotal;
   final double delivery;
   final DateTime date;
+  final String status; // Pending, Confirmed, Shipped, Delivered, Cancelled
 
   const Order({
     required this.id,
@@ -24,7 +25,26 @@ class Order {
     required this.subtotal,
     required this.delivery,
     required this.date,
+    this.status = 'Pending',
   });
+
+  Order copyWith({
+    String? status,
+  }) {
+    return Order(
+      id: id,
+      firstName: firstName,
+      lastName: lastName,
+      phone: phone,
+      wilaya: wilaya,
+      address: address,
+      items: items,
+      subtotal: subtotal,
+      delivery: delivery,
+      date: date,
+      status: status ?? this.status,
+    );
+  }
 
   double get total => subtotal + delivery;
 
@@ -38,6 +58,7 @@ class Order {
     'subtotal': subtotal,
     'delivery': delivery,
     'date': date.toIso8601String(),
+    'status': status,
     'items': [
       for (final e in items)
         {
@@ -87,6 +108,7 @@ class Order {
       date: j['date'] != null
           ? (DateTime.tryParse(j['date'].toString()) ?? DateTime.now())
           : DateTime.now(),
+      status: (j['status'] ?? 'Pending').toString(),
     );
   }
 }

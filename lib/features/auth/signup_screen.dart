@@ -80,12 +80,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppThemeColors.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.darkText),
+        iconTheme: IconThemeData(color: colors.text),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -105,7 +107,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 26,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.darkText,
+                          color: colors.text,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -113,7 +115,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         'Save your routine, wishlist, and orders',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: AppColors.mutedText,
+                          color: colors.mutedText,
                         ),
                       ),
                     ],
@@ -173,7 +175,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.darkText,
+                        color: colors.text,
                       ),
                     ),
                   ),

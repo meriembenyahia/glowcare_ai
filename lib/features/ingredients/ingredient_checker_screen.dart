@@ -1,383 +1,489 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/services/ai_service.dart';
 import '../../core/theme/widgets/app_colors.dart';
-import 'ingredient_rules.dart';
+import '../../core/theme/widgets/product_image.dart';
+import '../ai_advisor/ai_settings_dialog.dart';
+import '../cart/cart_provider.dart';
+import '../shop/product.dart';
+import '../shop/product_details_screen.dart';
+import '../shop/product_provider.dart';
 
-class IngredientCheckerScreen extends StatefulWidget {
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime time;
+  final List<Product>? recommendedProducts;
+  final int? safetyScore;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.time,
+    this.recommendedProducts,
+    this.safetyScore,
+  });
+}
+
+class IngredientCheckerScreen extends ConsumerStatefulWidget {
   const IngredientCheckerScreen({super.key});
 
   @override
-  State<IngredientCheckerScreen> createState() => _IngredientCheckerScreenState();
+  ConsumerState<IngredientCheckerScreen> createState() => _IngredientCheckerScreenState();
 }
 
-class _IngredientCheckerScreenState extends State<IngredientCheckerScreen> {
-  int _mode = 0; // 0: AI Full Formula Analyzer, 1: Pair Checker
+class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScreen> {
+  final _textController = TextEditingController();
+  final _scrollController = ScrollController();
+  final List<ChatMessage> _messages = [];
+  bool _isTyping = false;
+  bool _hasApiKey = false;
 
-  // Pair Checker state
-  String? _first;
-  String? _second;
-  String? _pairResult;
+  static const List<String> _quickPrompts = [
+    'روتين حب الشباب والبشرة الدهنية؟',
+    'Can I mix Retinol with Vitamin C?',
+    'شحال التوصيل لكل الولايات؟',
+    'Réparer barrière cutanée abîmée?',
+    'Best serum for dark spots & glow?',
+    'Safe ingredients for sensitive skin?',
+  ];
 
-  // AI Formula Analyzer state
-  final _ingredientsController = TextEditingController();
-  Map<String, dynamic>? _aiAnalysisResult;
+  @override
+  void initState() {
+    super.initState();
+    _checkApiKey();
+    _messages.add(
+      ChatMessage(
+        text: 'Hello! 🌸 I am your **Beauty Lab Skincare AI**.\n\n'
+            'Ask me anything about customized routines, active ingredients synergy (Retinol, Vitamin C, Niacinamide, BHA), product safety, or store recommendations in Algeria.\n\n'
+            '💬 *You can write in العربية / الدارجة, Français, or English!*',
+        isUser: false,
+        time: DateTime.now(),
+      ),
+    );
+  }
 
-  void _analyzeFormula() {
-    final text = _ingredientsController.text.trim();
-    if (text.isEmpty) return;
-
-    final lower = text.toLowerCase();
-    int score = 95;
-    final List<String> actives = [];
-    final List<String> warnings = [];
-
-    if (lower.contains('niacinamide')) actives.add('Niacinamide (Brightening & Sebum Control)');
-    if (lower.contains('hyaluronic acid')) actives.add('Hyaluronic Acid (Deep Hydration)');
-    if (lower.contains('salicylic acid') || lower.contains('bha')) actives.add('Salicylic Acid (BHA Exfoliation)');
-    if (lower.contains('retinol')) actives.add('Retinol (Anti-Aging & Turnover)');
-    if (lower.contains('vitamin c') || lower.contains('ascorbic')) actives.add('Vitamin C (Antioxidant)');
-    if (lower.contains('ceramide')) actives.add('Ceramides (Barrier Repair)');
-
-    if (lower.contains('alcohol denat') || lower.contains('alcohol')) {
-      score -= 15;
-      warnings.add('Contains Drying Alcohol: May irritate dry or sensitive skin.');
+  Future<void> _checkApiKey() async {
+    final key = await AiService.instance.getApiKey();
+    if (mounted) {
+      setState(() {
+        _hasApiKey = key != null && key.isNotEmpty;
+      });
     }
-    if (lower.contains('parfum') || lower.contains('fragrance')) {
-      score -= 10;
-      warnings.add('Contains Fragrance: Potential allergen for sensitive skin barrier.');
-    }
-    if (lower.contains('retinol') && lower.contains('salicylic')) {
-      score -= 20;
-      warnings.add('Combining Retinol & Salicylic Acid may cause redness or irritation.');
-    }
+  }
 
-    if (actives.isEmpty) actives.add('Hydrating base ingredients detected');
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-    setState(() {
-      _aiAnalysisResult = {
-        'score': score.clamp(50, 100),
-        'actives': actives,
-        'warnings': warnings,
-      };
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
+  }
+
+  Future<void> _sendMessage(String query) async {
+    final text = query.trim();
+    if (text.isEmpty || _isTyping) return;
+
+    _textController.clear();
+    setState(() {
+      _messages.add(ChatMessage(text: text, isUser: true, time: DateTime.now()));
+      _isTyping = true;
+    });
+    _scrollToBottom();
+
+    final allProducts = ref.read(productsProvider).value ?? [];
+
+    // Build context history for ChatGPT
+    final history = <Map<String, String>>[];
+    final recent = _messages.take(_messages.length - 1).toList();
+    final start = recent.length > 6 ? recent.length - 6 : 0;
+    for (int i = start; i < recent.length; i++) {
+      final m = recent[i];
+      history.add({
+        'role': m.isUser ? 'user' : 'assistant',
+        'content': m.text,
+      });
+    }
+
+    final responseText = await AiService.instance.askChatGpt(
+      userMessage: text,
+      conversationHistory: history,
+      catalog: allProducts,
+    );
+
+    final matched = _findRelevantProducts(text, responseText, allProducts);
+
+    if (mounted) {
+      setState(() {
+        _isTyping = false;
+        _messages.add(ChatMessage(
+          text: responseText,
+          isUser: false,
+          time: DateTime.now(),
+          recommendedProducts: matched.isNotEmpty ? matched : null,
+        ));
+      });
+      _scrollToBottom();
+    }
+  }
+
+  List<Product> _findRelevantProducts(String userQuery, String aiResponse, List<Product> catalog) {
+    if (catalog.isEmpty) return [];
+
+    final combined = '$userQuery $aiResponse'.toLowerCase();
+    final scored = <Product, int>{};
+
+    for (final p in catalog) {
+      int score = 0;
+      final pName = p.name.toLowerCase();
+      final pBrand = p.brand.toLowerCase();
+      final pDesc = p.description.toLowerCase();
+
+      if (combined.contains(pName)) score += 10;
+      if (combined.contains(pBrand)) score += 4;
+
+      for (final ing in p.ingredients) {
+        if (combined.contains(ing.toLowerCase())) score += 3;
+      }
+
+      if (combined.contains('acne') && (pDesc.contains('acne') || pDesc.contains('blemish') || pName.contains('effaclar'))) {
+        score += 5;
+      }
+      if (combined.contains('retinol') && (pDesc.contains('retinol') || pName.contains('retinol'))) {
+        score += 5;
+      }
+      if (combined.contains('vitamin c') && (pDesc.contains('vitamin c') || pName.contains('vitamin c'))) {
+        score += 5;
+      }
+      if (combined.contains('dry') && (pDesc.contains('moistur') || pName.contains('cerave'))) {
+        score += 4;
+      }
+
+      if (score > 2) {
+        scored[p] = score;
+      }
+    }
+
+    final sorted = scored.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.map((e) => e.key).take(3).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppThemeColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      appBar: AppBar(
+        backgroundColor: colors.background,
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.auto_awesome, color: colors.primary, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.science, color: colors.primary, size: 28),
-                  const SizedBox(width: 8),
                   Text(
-                    'Beauty Lab AI',
+                    'Beauty Lab AI Advisor',
                     style: GoogleFonts.playfairDisplay(
-                      fontSize: 26,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: colors.text,
                     ),
                   ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: _hasApiKey ? Colors.green : Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        _hasApiKey ? 'ChatGPT (OpenAI) · Online' : 'Smart Skincare AI · Active',
+                        style: GoogleFonts.poppins(fontSize: 10, color: colors.mutedText),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'AI Ingredient & Safety Analyzer',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: colors.mutedText,
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings_outlined, color: colors.primary),
+            tooltip: 'ChatGPT Settings (OpenAI Key)',
+            onPressed: () async {
+              await AiSettingsDialog.show(context);
+              _checkApiKey();
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Messages List
+            Expanded(
+              child: ListView.separated(
+                controller: _scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                itemCount: _messages.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (context, i) {
+                  final msg = _messages[i];
+                  return _buildMessageBubble(msg, colors, isDark);
+                },
+              ),
+            ),
+
+            // Typing Indicator
+            if (_isTyping)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: colors.primary),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _hasApiKey
+                          ? 'ChatGPT is analyzing your skincare profile...'
+                          : 'GlowCare AI is analyzing cosmetic formulations...',
+                      style: GoogleFonts.poppins(fontSize: 11, fontStyle: FontStyle.italic, color: colors.mutedText),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
 
-              // Mode Tabs
-              Row(
+            // Quick Prompt Suggestions
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Row(
+                children: [
+                  for (final prompt in _quickPrompts)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text(prompt, style: GoogleFonts.poppins(fontSize: 11)),
+                        backgroundColor: colors.cardBackground,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: colors.primary.withValues(alpha: 0.15)),
+                        ),
+                        labelStyle: TextStyle(color: colors.text),
+                        onPressed: () => _sendMessage(prompt),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Input Bar
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              decoration: BoxDecoration(
+                color: colors.cardBackground,
+                border: Border(top: BorderSide(color: colors.primary.withValues(alpha: 0.08))),
+              ),
+              child: Row(
                 children: [
                   Expanded(
-                    child: _modeTab(
-                      label: 'AI Formula Safety',
-                      icon: Icons.auto_awesome,
-                      isModeZero: true,
+                    child: TextField(
+                      controller: _textController,
+                      style: GoogleFonts.poppins(fontSize: 13, color: colors.text),
+                      decoration: InputDecoration(
+                        hintText: 'اسأل عن روتينك، الريتينول، أو استشر الذكاء الاصطناعي...',
+                        hintStyle: GoogleFonts.poppins(fontSize: 12, color: colors.mutedText),
+                        fillColor: colors.inputFill,
+                        filled: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide.none),
+                      ),
+                      onSubmitted: _sendMessage,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _modeTab(
-                      label: 'Pair Checker',
-                      icon: Icons.compare_arrows,
-                      isModeZero: false,
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.send_rounded, color: Colors.white, size: 19),
+                      onPressed: () => _sendMessage(_textController.text),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              if (_mode == 0) _buildAiFormulaView(colors) else _buildPairCheckerView(colors),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildAiFormulaView(AppThemeColors colors) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Paste Ingredient List',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: colors.text,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _ingredientsController,
-          maxLines: 4,
-          style: TextStyle(color: colors.text),
-          decoration: InputDecoration(
-            hintText: 'e.g. Water, Niacinamide, Glycerin, Salicylic Acid, Fragrance...',
-            fillColor: colors.inputFill,
-            filled: true,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+  Widget _buildMessageBubble(ChatMessage msg, AppThemeColors colors, bool isDark) {
+    if (msg.isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 290),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.primary,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(18),
+              bottomRight: Radius.circular(4),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: _analyzeFormula,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.primary,
-              foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            icon: const Icon(Icons.auto_awesome, size: 18),
-            label: Text(
-              'Analyze Formula Safety',
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
+          child: Text(
+            msg.text,
+            style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
           ),
         ),
-        if (_aiAnalysisResult != null) ...[
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: colors.cardBackground,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+      );
+    }
+
+    // AI Response Bubble
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 330),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colors.cardBackground,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomRight: Radius.circular(18),
+            bottomLeft: Radius.circular(4),
+          ),
+          border: Border.all(color: colors.primary.withValues(alpha: 0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, color: colors.primary, size: 15),
+                const SizedBox(width: 6),
+                Text(
+                  _hasApiKey ? 'ChatGPT Skincare Expert' : 'GlowCare Beauty Lab AI',
+                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: colors.primary),
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Safety Score',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors.text,
+            const SizedBox(height: 8),
+            Text(
+              msg.text,
+              style: GoogleFonts.poppins(fontSize: 12.5, height: 1.55, color: colors.text),
+            ),
+
+            // Product Recommendation Cards inside chat
+            if (msg.recommendedProducts != null && msg.recommendedProducts!.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                'Recommended Store Products:',
+                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: colors.primary),
+              ),
+              const SizedBox(height: 8),
+              for (final p in msg.recommendedProducts!)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colors.inputFill,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colors.primary.withValues(alpha: 0.15)),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: ProductImage(path: p.image, size: 44),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: (_aiAnalysisResult!['score'] as int) > 80
-                            ? colors.primary
-                            : Colors.amber.shade800,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_aiAnalysisResult!['score']}/100',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.white,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              p.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: colors.text),
+                            ),
+                            Text(
+                              '${p.price.toStringAsFixed(0)} DA',
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: colors.primary),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                Text(
-                  'Key Actives Found:',
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: colors.text),
-                ),
-                const SizedBox(height: 6),
-                for (final act in (_aiAnalysisResult!['actives'] as List<String>))
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle_outline, size: 16, color: colors.primary),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(act, style: GoogleFonts.poppins(fontSize: 12, color: colors.text))),
-                      ],
-                    ),
-                  ),
-
-                if ((_aiAnalysisResult!['warnings'] as List<String>).isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Potential Irritants & Warnings:',
-                    style: GoogleFonts.poppins(
-                        fontSize: 13, fontWeight: FontWeight.w600, color: Colors.redAccent),
-                  ),
-                  const SizedBox(height: 6),
-                  for (final warn in (_aiAnalysisResult!['warnings'] as List<String>))
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.redAccent),
-                          const SizedBox(width: 8),
-                          Expanded(
-                              child: Text(warn,
-                                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.redAccent))),
-                        ],
+                      IconButton(
+                        icon: Icon(Icons.add_shopping_cart, size: 18, color: colors.primary),
+                        tooltip: 'Add to Cart',
+                        onPressed: () {
+                          ref.read(cartProvider.notifier).add(p);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('${p.name} added to cart!'), backgroundColor: AppColors.deepGreen),
+                          );
+                        },
                       ),
-                    ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildPairCheckerView(AppThemeColors colors) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DropdownButtonFormField<String>(
-          initialValue: _first,
-          isExpanded: true,
-          dropdownColor: colors.cardBackground,
-          style: TextStyle(color: colors.text),
-          decoration: InputDecoration(
-            hintText: 'First ingredient',
-            fillColor: colors.inputFill,
-            filled: true,
-          ),
-          items: [
-            for (final i in ingredientList)
-              DropdownMenuItem(value: i, child: Text(i, style: TextStyle(color: colors.text))),
-          ],
-          onChanged: (v) => setState(() => _first = v),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _second,
-          isExpanded: true,
-          dropdownColor: colors.cardBackground,
-          style: TextStyle(color: colors.text),
-          decoration: InputDecoration(
-            hintText: 'Second ingredient',
-            fillColor: colors.inputFill,
-            filled: true,
-          ),
-          items: [
-            for (final i in ingredientList)
-              DropdownMenuItem(value: i, child: Text(i, style: TextStyle(color: colors.text))),
-          ],
-          onChanged: (v) => setState(() => _second = v),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            onPressed: (_first == null || _second == null)
-                ? null
-                : () => setState(() => _pairResult = checkPair(_first!, _second!)),
-            child: const Text('Check Ingredient Pair'),
-          ),
-        ),
-        if (_pairResult != null) ...[
-          const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              _pairResult!,
-              style: GoogleFonts.poppins(fontSize: 13, height: 1.6, color: colors.text),
-            ),
-          ),
-        ],
-        const SizedBox(height: 24),
-        Text(
-          'Safe Active Combinations',
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: colors.text),
-        ),
-        const SizedBox(height: 8),
-        for (final e in safePairs.entries)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Text('• ${e.key}: ${e.value}', style: GoogleFonts.poppins(fontSize: 12, color: colors.mutedText)),
-          ),
-      ],
-    );
-  }
-
-  Widget _modeTab({
-    required String label,
-    required IconData icon,
-    required bool isModeZero,
-  }) {
-    final isSel = (_mode == 0) == isModeZero;
-    final colors = AppThemeColors.of(context);
-
-    return GestureDetector(
-      onTap: () => setState(() => _mode = isModeZero ? 0 : 1),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 44,
-        decoration: BoxDecoration(
-          color: isSel ? colors.primary : colors.cardBackground,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: isSel ? AppColors.white : colors.text, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: isSel ? FontWeight.w600 : FontWeight.w500,
-                color: isSel ? AppColors.white : colors.text,
-              ),
-            ),
+                      IconButton(
+                        icon: Icon(Icons.arrow_forward_ios, size: 12, color: colors.mutedText),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: p)),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ],
         ),
       ),

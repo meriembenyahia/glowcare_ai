@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/localization/app_strings.dart';
+import '../../core/role/role_provider.dart';
 import '../../core/theme/widgets/app_colors.dart';
-import '../orders/order_history_screen.dart';
-import '../shop/shop_screen.dart';
-import '../routine/routine_screen.dart';
-import 'home_screen.dart';
+import '../developer/developer_console_screen.dart';
 import '../ingredients/ingredient_checker_screen.dart';
+import '../orders/order_history_screen.dart';
+import '../routine/routine_screen.dart';
+import '../seller/seller_dashboard_screen.dart';
+import '../shop/shop_screen.dart';
+import 'home_screen.dart';
 
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> {
   int _index = 0;
 
   final List<Widget> _pages = const [
@@ -26,8 +31,19 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final activeRole = ref.watch(roleProvider);
+
+    // Switch view according to active commercial role
+    if (activeRole == AppRole.seller) {
+      return const SellerDashboardScreen();
+    }
+    if (activeRole == AppRole.developer) {
+      return const DeveloperConsoleScreen();
+    }
+
     final colors = AppThemeColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final strings = AppStrings.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -41,27 +57,27 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(
             icon: Icon(Icons.home_outlined, color: colors.mutedText),
             selectedIcon: Icon(Icons.home, color: colors.primary),
-            label: 'Home',
+            label: strings.navHome,
           ),
           NavigationDestination(
             icon: Icon(Icons.shopping_bag_outlined, color: colors.mutedText),
             selectedIcon: Icon(Icons.shopping_bag, color: colors.primary),
-            label: 'Shop',
+            label: strings.navShop,
           ),
           NavigationDestination(
             icon: Icon(Icons.science_outlined, color: colors.mutedText),
             selectedIcon: Icon(Icons.science, color: colors.primary),
-            label: 'Beauty Lab',
+            label: strings.navBeautyLab,
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined, color: colors.mutedText),
             selectedIcon: Icon(Icons.calendar_month, color: colors.primary),
-            label: 'Routine',
+            label: strings.navRoutine,
           ),
           NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined, color: colors.mutedText),
             selectedIcon: Icon(Icons.receipt_long, color: colors.primary),
-            label: 'Orders',
+            label: strings.navOrders,
           ),
         ],
       ),

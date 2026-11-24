@@ -1,11 +1,17 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
+import '../../core/localization/locale_provider.dart';
+import '../../core/role/role_switcher_dialog.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/product_image.dart';
 import '../ai_advisor/ai_skin_analysis_screen.dart';
+import '../ingredients/ingredient_checker_screen.dart';
+import '../loyalty/loyalty_card_screen.dart';
+import '../loyalty/loyalty_provider.dart';
 import '../auth/auth_provider.dart';
 import '../auth/signup_screen.dart';
 import '../auth/signup_prompt.dart';
@@ -59,6 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isGuest = ref.watch(authProvider) == AuthStatus.guest;
     final productsAsync = ref.watch(productsProvider);
     final colors = AppThemeColors.of(context);
+    final strings = AppStrings.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -89,6 +96,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   Row(
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.language),
+                        color: colors.primary,
+                        tooltip: 'تغيير اللغة (Change Language)',
+                        onPressed: () => LanguagePickerDialog.show(context),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.hub_outlined, color: colors.text),
+                        tooltip: 'Switch Portal (Customer/Seller/Dev)',
+                        onPressed: () => RoleSwitcherDialog.show(context),
+                      ),
                       IconButton(
                         icon: Icon(Icons.shopping_bag_outlined, color: colors.text),
                         onPressed: () => Navigator.of(context).push(
@@ -131,7 +149,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onSubmitted: (q) => _navigateToShop('All', q),
                 style: TextStyle(color: colors.text),
                 decoration: InputDecoration(
-                  hintText: 'Search for products, skincare...',
+                  hintText: strings.searchHint,
                   prefixIcon: IconButton(
                     icon: Icon(Icons.search, color: colors.mutedText, size: 20),
                     onPressed: () => _navigateToShop('All', _searchController.text),
@@ -152,11 +170,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 14),
 
               // 3. البانر الرئيسي
-              _banner(colors),
+              _banner(colors, strings),
               const SizedBox(height: 14),
 
-              // AI Skin Analysis Card
-              _aiBanner(colors),
+              // AI Features & Loyalty Card
+              _aiBanner(colors, strings),
+              const SizedBox(height: 10),
+              _beautyLabBanner(colors, strings),
+              const SizedBox(height: 10),
+              _loyaltyCardBanner(colors, strings),
               const SizedBox(height: 16),
 
               // 4. الفئات الأربعة
@@ -165,22 +187,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   _Category(
                     icon: Icons.water_drop_outlined,
-                    label: 'Skincare',
+                    label: strings.catSkincare,
                     onTap: () => _navigateToShop('Skincare'),
                   ),
                   _Category(
                     icon: Icons.brush_outlined,
-                    label: 'Makeup',
+                    label: strings.catMakeup,
                     onTap: () => _navigateToShop('Makeup'),
                   ),
                   _Category(
                     icon: Icons.spa_outlined,
-                    label: 'Hair Care',
+                    label: strings.catHairCare,
                     onTap: () => _navigateToShop('Hair Care'),
                   ),
                   _Category(
                     icon: Icons.local_florist_outlined,
-                    label: 'Fragrance',
+                    label: strings.catFragrance,
                     onTap: () => _navigateToShop('Fragrance'),
                   ),
                 ],
@@ -192,7 +214,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Best for You',
+                    strings.bestForYou,
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -205,7 +227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       child: Text(
-                        'See All →',
+                        strings.seeAll,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -255,7 +277,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // 6. قسم المنتجات الشائعة العمودي
               Text(
-                'Trending Products',
+                strings.trendingProducts,
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -351,7 +373,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _banner(AppThemeColors colors) {
+  Widget _banner(AppThemeColors colors, AppStrings strings) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -374,7 +396,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Healthy Skin\nNatural Beauty',
+                  strings.bannerTitle,
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -384,7 +406,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Discover top skincare & makeup formulas',
+                  strings.bannerSubtitle,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: colors.mutedText,
@@ -402,8 +424,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text('Shop Now',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  child: Text(strings.shopNow,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
@@ -438,7 +460,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _aiBanner(AppThemeColors colors) {
+  Widget _aiBanner(AppThemeColors colors, AppStrings strings) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const AiSkinAnalysisScreen()),
@@ -472,7 +494,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'AI Skin Consultation',
+                    strings.aiSkinConsultation,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -480,7 +502,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   Text(
-                    'Take a 1-minute AI quiz to get custom skincare picks',
+                    strings.aiSkinSubtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       color: colors.mutedText,
@@ -490,6 +512,167 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             Icon(Icons.chevron_right, color: colors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _beautyLabBanner(AppThemeColors colors, AppStrings strings) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const IngredientCheckerScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colors.cardBackground,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.science_outlined, color: colors.primary, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.beautyLabAi,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colors.text,
+                    ),
+                  ),
+                  Text(
+                    strings.beautyLabSubtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: colors.mutedText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: colors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _loyaltyCardBanner(AppThemeColors colors, AppStrings strings) {
+    final loyalty = ref.watch(loyaltyProvider);
+    final tier = loyalty.tier;
+    final points = loyalty.totalPoints;
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LoyaltyCardScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colors.primary.withValues(alpha: 0.16),
+              colors.cardBackground,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Text(tier.emoji, style: const TextStyle(fontSize: 22)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        strings.loyaltyCardTitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: colors.text,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: colors.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          tier.label,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$points ${strings.pts} • ${strings.loyaltyCardSubtitle}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: colors.mutedText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                Text(
+                  strings.viewCard,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colors.primary,
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: colors.primary, size: 20),
+              ],
+            ),
           ],
         ),
       ),

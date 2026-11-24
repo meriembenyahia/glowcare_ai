@@ -1,30 +1,27 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:glowcare_ai/main.dart';
+import 'package:glowcare_ai/core/services/ai_service.dart';
+import 'package:glowcare_ai/features/loyalty/loyalty_provider.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const GlowCareApp());
+  test('Loyalty tier and points calculation test', () {
+    expect(LoyaltyState.pointsForOrder(1000), 10);
+    expect(LoyaltyState.pointsForOrder(5000), 50);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    const bronze = LoyaltyState(totalPoints: 100, history: []);
+    expect(bronze.tier, LoyaltyTier.bronze);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    const silver = LoyaltyState(totalPoints: 500, history: []);
+    expect(silver.tier, LoyaltyTier.silver);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    const gold = LoyaltyState(totalPoints: 1000, history: []);
+    expect(gold.tier, LoyaltyTier.gold);
+
+    const platinum = LoyaltyState(totalPoints: 2000, history: []);
+    expect(platinum.tier, LoyaltyTier.platinum);
+  });
+
+  test('AiService initial state test', () {
+    final ai = AiService.instance;
+    expect(ai.hasKey, false);
   });
 }

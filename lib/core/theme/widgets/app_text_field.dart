@@ -30,6 +30,8 @@ class _AppTextFieldState extends State<AppTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppThemeColors.of(context);
+
     return TextFormField(
       controller: widget.controller,
       keyboardType: widget.keyboardType,
@@ -37,17 +39,20 @@ class _AppTextFieldState extends State<AppTextField> {
       obscureText: widget.isPassword && _obscure,
       validator: widget.validator,
       autovalidateMode: AutovalidateMode.onUserInteraction,
-      style: const TextStyle(color: AppColors.darkText, fontSize: 14),
+      style: TextStyle(color: colors.text, fontSize: 14),
       decoration: InputDecoration(
         hintText: widget.hint,
-        prefixIcon: Icon(widget.icon, color: AppColors.mutedText, size: 20),
+        hintStyle: TextStyle(color: colors.mutedText, fontSize: 14),
+        fillColor: colors.inputFill,
+        filled: true,
+        prefixIcon: Icon(widget.icon, color: colors.mutedText, size: 20),
         suffixIcon: widget.isPassword
             ? IconButton(
                 icon: Icon(
                   _obscure
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: AppColors.mutedText,
+                  color: colors.mutedText,
                   size: 20,
                 ),
                 onPressed: () => setState(() => _obscure = !_obscure),

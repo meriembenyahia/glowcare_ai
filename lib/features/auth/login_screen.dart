@@ -87,11 +87,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppThemeColors.of(context);
+
     return Scaffold(
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.darkText),
+        iconTheme: IconThemeData(color: colors.text),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -111,7 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 28,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.darkText,
+                        color: colors.text,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -120,7 +123,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         letterSpacing: 1,
-                        color: AppColors.mutedText,
+                        color: colors.mutedText,
                       ),
                     ),
                   ],
@@ -132,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.darkText,
+                  color: colors.text,
                 ),
               ),
               const SizedBox(height: 4),
@@ -140,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 'Your glow journey continues',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppColors.mutedText,
+                  color: colors.mutedText,
                 ),
               ),
               const SizedBox(height: 24),
@@ -169,7 +172,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'Forgot password?',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppColors.mutedText,
+                      color: colors.mutedText,
                     ),
                   ),
                 ),
@@ -193,7 +196,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.deepGreen,
+                      color: colors.primary,
                     ),
                   ),
                 ),
@@ -209,7 +212,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.darkText,
+                      color: colors.text,
                     ),
                   ),
                 ),

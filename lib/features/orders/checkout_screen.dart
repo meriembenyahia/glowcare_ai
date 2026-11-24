@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../cart/cart_provider.dart';
+import '../loyalty/loyalty_provider.dart';
 import 'order_confirmation_screen.dart';
 import 'order_model.dart';
 import 'orders_provider.dart';
@@ -63,6 +64,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
 
     ref.read(ordersProvider.notifier).add(order);
+    ref.read(loyaltyProvider.notifier).addPoints(subtotal, orderId: order.id);
     ref.read(cartProvider.notifier).clear();
 
     Navigator.of(context).pushAndRemoveUntil(

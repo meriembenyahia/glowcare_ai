@@ -60,6 +60,22 @@ class OrdersNotifier extends Notifier<List<Order>> {
     await _writeLocal(state);
     await SupabaseService.saveOrder(order);
   }
+
+  Future<void> updateStatus(String orderId, String newStatus) async {
+    state = [
+      for (final order in state)
+        if (order.id == orderId)
+          order.copyWith(status: newStatus)
+        else
+          order,
+    ];
+    await _writeLocal(state);
+  }
+
+  Future<void> deleteOrder(String orderId) async {
+    state = state.where((o) => o.id != orderId).toList();
+    await _writeLocal(state);
+  }
 }
 
 final ordersProvider =
