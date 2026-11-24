@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../../core/theme/widgets/app_bar_title.dart';
 import '../auth/auth_provider.dart';
 import '../auth/login_screen.dart';
 import 'loyalty_provider.dart';
@@ -16,6 +18,7 @@ class LoyaltyCardScreen extends ConsumerWidget {
     final isLoggedIn = authStatus == AuthStatus.loggedIn;
     final userEmail = ref.read(authProvider.notifier).userEmail;
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     final tier = loyalty.tier;
     final points = loyalty.totalPoints;
@@ -34,8 +37,8 @@ class LoyaltyCardScreen extends ConsumerWidget {
         backgroundColor: colors.background,
         elevation: 0,
         iconTheme: IconThemeData(color: colors.text),
-        title: Text(
-          'Carte de Fidélité (Loyalty Card)',
+        title: AppBarTitle(
+          text: s.t('Carte de Fidélité (Loyalty Card)'),
           style: GoogleFonts.poppins(
             fontSize: 17,
             fontWeight: FontWeight.w600,
@@ -45,12 +48,12 @@ class LoyaltyCardScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Add +150 Demo Points',
+            tooltip: s.t('Add +150 Demo Points'),
             onPressed: () {
               ref.read(loyaltyProvider.notifier).addPoints(15000);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🎉 +150 Loyalty Points added to your card!'),
+                SnackBar(
+                  content: Text(s.t('🎉 +150 Loyalty Points added to your card!')),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -67,7 +70,7 @@ class LoyaltyCardScreen extends ConsumerWidget {
             _GlowCard(
               tier: tier,
               points: points,
-              memberName: isLoggedIn && userEmail.isNotEmpty ? userEmail : 'VIP Guest Member',
+              memberName: isLoggedIn && userEmail.isNotEmpty ? userEmail : s.t('VIP Guest Member'),
             ),
             const SizedBox(height: 16),
 
@@ -87,7 +90,7 @@ class LoyaltyCardScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Sign in to sync your points and discounts across all devices.',
+                        s.t('Sign in to sync your points and discounts across all devices.'),
                         style: GoogleFonts.poppins(fontSize: 11, color: colors.text),
                       ),
                     ),
@@ -95,7 +98,7 @@ class LoyaltyCardScreen extends ConsumerWidget {
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
                       ),
-                      child: const Text('Sign In', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                      child: Text(s.t('Sign In'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -104,7 +107,7 @@ class LoyaltyCardScreen extends ConsumerWidget {
             // ── Progress to next tier ─────────────────────────────
             if (tier != LoyaltyTier.platinum) ...[
               Text(
-                'Progress to ${_nextTierName(tier)}',
+                s.tf('Progress to {tier}', {'tier': s.t(_nextTierName(tier))}),
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -123,7 +126,10 @@ class LoyaltyCardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                '$ptsToNext pts needed to reach ${tier.emoji} ${_nextTierName(tier)} Tier',
+                s.tf('{pts} pts needed to reach {tier} Tier', {
+                  'pts': '$ptsToNext',
+                  'tier': '${tier.emoji} ${s.t(_nextTierName(tier))}',
+                }),
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   color: colors.mutedText,
@@ -143,7 +149,7 @@ class LoyaltyCardScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You\'ve reached the highest tier — Platinum VIP! Enjoy 15% off all orders and free express delivery.',
+                        s.t("You've reached the highest tier — Platinum VIP! Enjoy 15% off all orders and free express delivery."),
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: const Color(0xFF7B2FBE),
@@ -159,7 +165,9 @@ class LoyaltyCardScreen extends ConsumerWidget {
 
             // ── Benefits ──────────────────────────────────────────
             Text(
-              '${tier.emoji} ${tier.label} Member Privileges',
+              s.tf('{tier} Member Privileges', {
+                'tier': '${tier.emoji} ${s.t(tier.label)}',
+              }),
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -178,7 +186,7 @@ class LoyaltyCardScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        b,
+                        s.t(b),
                         style: GoogleFonts.poppins(
                             fontSize: 13, color: colors.text),
                       ),
@@ -193,18 +201,18 @@ class LoyaltyCardScreen extends ConsumerWidget {
             _InfoCard(
               colors: colors,
               icon: Icons.info_outline,
-              title: 'Comment accumuler des points ? (How it works)',
-              body:
+              title: s.t('Comment accumuler des points ? (How it works)'),
+              body: s.t(
                   '• 1 point accumulé pour chaque 100 DA dépensés\n'
                   '• Points crédités automatiquement à chaque commande confirmée\n'
                   '• Paliers : 500 pts → Silver · 1000 pts → Gold · 2000 pts → Platinum 💎\n'
-                  '• Remises directes sur vos prochains achats !',
+                  '• Remises directes sur vos prochains achats !'),
             ),
             const SizedBox(height: 20),
 
             // ── Points history ────────────────────────────────────
             Text(
-              'Points History',
+              s.t('Points History'),
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -216,8 +224,8 @@ class LoyaltyCardScreen extends ConsumerWidget {
                 ? _InfoCard(
                     colors: colors,
                     icon: Icons.receipt_long_outlined,
-                    title: 'No points history yet',
-                    body: 'Pass your first order to collect points, or tap + in the top bar to test points!',
+                    title: s.t('No points history yet'),
+                    body: s.t('Pass your first order to collect points, or tap + in the top bar to test points!'),
                   )
                 : Column(
                     children: [
@@ -266,6 +274,7 @@ class _GlowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     final gradients = {
       LoyaltyTier.bronze: [const Color(0xFFCD7F32), const Color(0xFF8B5E3C)],
       LoyaltyTier.silver: [const Color(0xFFBDBDBD), const Color(0xFF757575)],
@@ -334,7 +343,7 @@ class _GlowCard extends StatelessWidget {
                         const Icon(Icons.spa, color: Colors.white, size: 22),
                         const SizedBox(width: 8),
                         Text(
-                          'GlowCare Club',
+                          s.t('GlowCare Club'),
                           style: GoogleFonts.playfairDisplay(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -351,7 +360,7 @@ class _GlowCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${tier.emoji} ${tier.label.toUpperCase()}',
+                        '${tier.emoji} ${s.t(tier.label).toUpperCase()}',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -378,7 +387,7 @@ class _GlowCard extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
-                        'POINTS',
+                        s.t('POINTS'),
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           letterSpacing: 1.5,
@@ -408,7 +417,9 @@ class _GlowCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'CARD # GC-${(points + 1042).toString().padLeft(6, '0')}',
+                            s.tf('CARD # {number}', {
+                              'number': 'GC-${(points + 1042).toString().padLeft(6, '0')}'
+                            }),
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               color: Colors.white70,
@@ -463,6 +474,7 @@ class _HistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     final isPositive = entry.points > 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -494,7 +506,7 @@ class _HistoryTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  entry.reason,
+                  s.pointReason(entry.reason),
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -512,7 +524,7 @@ class _HistoryTile extends StatelessWidget {
             ),
           ),
           Text(
-            '${isPositive ? '+' : ''}${entry.points} pts',
+            '${isPositive ? '+' : ''}${entry.points} ${s.t('pts')}',
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w700,

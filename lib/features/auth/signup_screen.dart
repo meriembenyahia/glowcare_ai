@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/app_text_field.dart';
@@ -32,28 +33,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     super.dispose();
   }
 
-  String? _required(String? value, String label) {
-    if (value == null || value.trim().isEmpty) return '$label is required';
-    return null;
-  }
-
-  String? _emailValidator(String? value) {
+  String? _emailValidator(String? value, AppStrings s) {
     final email = value?.trim() ?? '';
-    if (email.isEmpty) return 'Email is required';
+    if (email.isEmpty) return s.t('Email is required');
     final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
-    if (!ok) return 'Enter a valid email address';
+    if (!ok) return s.t('Enter a valid email address');
     return null;
   }
 
-  String? _passwordValidator(String? value) {
-    if (value == null || value.isEmpty) return 'Password is required';
-    if (value.length < 6) return 'Password must be at least 6 characters';
+  String? _passwordValidator(String? value, AppStrings s) {
+    if (value == null || value.isEmpty) return s.t('Password is required');
+    if (value.length < 6) return s.t('Password must be at least 6 characters');
     return null;
   }
 
-  String? _confirmValidator(String? value) {
-    if (value == null || value.isEmpty) return 'Please confirm your password';
-    if (value != _passwordController.text) return 'Passwords do not match';
+  String? _confirmValidator(String? value, AppStrings s) {
+    if (value == null || value.isEmpty) return s.t('Please confirm your password');
+    if (value != _passwordController.text) return s.t('Passwords do not match');
     return null;
   }
 
@@ -81,6 +77,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -103,7 +100,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       const AppLogo(size: 88),
                       const SizedBox(height: 8),
                       Text(
-                        'Create your account',
+                        s.t('Create your account'),
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 26,
                           fontWeight: FontWeight.w600,
@@ -112,7 +109,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Save your routine, wishlist, and orders',
+                        s.t('Save your routine, wishlist, and orders'),
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: colors.mutedText,
@@ -124,41 +121,43 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 const SizedBox(height: 24),
                 AppTextField(
                   controller: _nameController,
-                  hint: 'Full name',
+                  hint: s.t('Full name'),
                   icon: Icons.person_outline,
                   textInputAction: TextInputAction.next,
-                  validator: (v) => _required(v, 'Full name'),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? s.t('Full name is required')
+                      : null,
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
                   controller: _emailController,
-                  hint: 'Email address',
+                  hint: s.t('Email address'),
                   icon: Icons.mail_outline,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  validator: _emailValidator,
+                  validator: (v) => _emailValidator(v, s),
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
                   controller: _passwordController,
-                  hint: 'Password',
+                  hint: s.t('Password'),
                   icon: Icons.lock_outline,
                   isPassword: true,
                   textInputAction: TextInputAction.next,
-                  validator: _passwordValidator,
+                  validator: (v) => _passwordValidator(v, s),
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
                   controller: _confirmController,
-                  hint: 'Confirm password',
+                  hint: s.t('Confirm password'),
                   icon: Icons.lock_outline,
                   isPassword: true,
                   textInputAction: TextInputAction.done,
-                  validator: _confirmValidator,
+                  validator: (v) => _confirmValidator(v, s),
                 ),
                 const SizedBox(height: 22),
                 PrimaryButton(
-                  label: 'Create Account',
+                  label: s.t('Create Account'),
                   isLoading: _isLoading,
                   onPressed: _handleSignup,
                 ),
@@ -171,7 +170,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       );
                     },
                     child: Text(
-                      'Already have an account? Log In',
+                      s.t('Already have an account? Log In'),
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,

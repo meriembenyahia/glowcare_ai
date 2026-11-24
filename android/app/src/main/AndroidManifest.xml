@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required so the app can reach the AI providers, Supabase and images
+         in release builds too (debug/profile manifests already add this). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="glowcare_ai"
         android:name="${applicationName}"

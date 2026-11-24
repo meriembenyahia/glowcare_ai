@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../../core/theme/widgets/app_bar_title.dart';
 import '../../core/theme/widgets/product_image.dart';
 import '../loyalty/loyalty_card_screen.dart';
 import '../loyalty/loyalty_provider.dart';
@@ -19,6 +21,7 @@ class CartScreen extends ConsumerWidget {
     const delivery = 500.0;
     final total = subtotal + delivery;
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     // Loyalty
     final loyalty = ref.watch(loyaltyProvider);
@@ -29,8 +32,8 @@ class CartScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: colors.background,
         iconTheme: IconThemeData(color: colors.text),
-        title: Text(
-          'My Cart (${items.length})',
+        title: AppBarTitle(
+          text: s.tf('My Cart ({count})', {'count': '${items.length}'}),
           style: GoogleFonts.poppins(fontSize: 16, color: colors.text),
         ),
       ),
@@ -43,7 +46,7 @@ class CartScreen extends ConsumerWidget {
                       size: 64, color: colors.mutedText),
                   const SizedBox(height: 12),
                   Text(
-                    'Your cart is empty',
+                    s.t('Your cart is empty'),
                     style: GoogleFonts.poppins(
                         fontSize: 15, color: colors.mutedText),
                   ),
@@ -94,7 +97,7 @@ class CartScreen extends ConsumerWidget {
                                           color: colors.mutedText),
                                     ),
                                     Text(
-                                      '${(e.product.price * e.quantity).toStringAsFixed(0)} DA',
+                                      s.money(e.product.price * e.quantity),
                                       style: GoogleFonts.poppins(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
@@ -156,7 +159,7 @@ class CartScreen extends ConsumerWidget {
                             builder: (_) => const CheckoutScreen()),
                       ),
                       child: Text(
-                        'Proceed to Checkout',
+                        s.t('Proceed to Checkout'),
                         style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700, fontSize: 14),
                       ),
@@ -171,6 +174,7 @@ class CartScreen extends ConsumerWidget {
   Widget _row(BuildContext context, String label, double value,
       {bool bold = false}) {
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
     final style = GoogleFonts.poppins(
       fontSize: bold ? 15 : 13,
       fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
@@ -181,8 +185,8 @@ class CartScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: style),
-          Text('${value.toStringAsFixed(0)} DA', style: style),
+          Text(s.t(label), style: style),
+          Text(s.money(value), style: style),
         ],
       ),
     );
@@ -213,6 +217,7 @@ class _LoyaltyBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const LoyaltyCardScreen()),
@@ -233,23 +238,24 @@ class _LoyaltyBanner extends StatelessWidget {
                 TextSpan(
                   style: GoogleFonts.poppins(fontSize: 12, color: _tierColor()),
                   children: [
-                    const TextSpan(
-                      text: 'You\'ll earn ',
-                      style: TextStyle(fontWeight: FontWeight.w400),
+                    TextSpan(
+                      text: s.t("You'll earn "),
+                      style: const TextStyle(fontWeight: FontWeight.w400),
                     ),
                     TextSpan(
-                      text: '+$earnedPts pts',
+                      text: '+$earnedPts ${s.t('pts')}',
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     TextSpan(
-                      text: ' with this order  •  Total: ${currentPts + earnedPts} pts',
+                      text: s.tf(' with this order  •  Total: {pts} pts',
+                          {'pts': '${currentPts + earnedPts}'}),
                       style: const TextStyle(fontWeight: FontWeight.w400),
                     ),
                   ],
                 ),
               ),
             ),
-            Icon(Icons.chevron_right, size: 18, color: _tierColor()),
+            Icon(s.chevronIcon(context), size: 18, color: _tierColor()),
           ],
         ),
       ),

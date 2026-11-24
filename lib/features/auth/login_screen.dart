@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/app_text_field.dart';
@@ -28,17 +29,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  String? _emailValidator(String? value) {
+  String? _emailValidator(String? value, AppStrings s) {
     final email = value?.trim() ?? '';
-    if (email.isEmpty) return 'Email is required';
+    if (email.isEmpty) return s.t('Email is required');
     final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
-    if (!ok) return 'Enter a valid email address';
+    if (!ok) return s.t('Enter a valid email address');
     return null;
   }
 
-  String? _passwordValidator(String? value) {
-    if (value == null || value.isEmpty) return 'Password is required';
-    if (value.length < 6) return 'Password must be at least 6 characters';
+  String? _passwordValidator(String? value, AppStrings s) {
+    if (value == null || value.isEmpty) return s.t('Password is required');
+    if (value.length < 6) return s.t('Password must be at least 6 characters');
     return null;
   }
 
@@ -63,12 +64,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _forgotPassword() async {
+    final s = AppStrings.of(context);
     final email = _emailController.text.trim();
     final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter your email first, then tap Forgot password.'),
+        SnackBar(
+          content: Text(s.t('Enter your email first, then tap Forgot password.')),
         ),
       );
       return;
@@ -79,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          error ?? 'If this email is registered, a reset link has been sent.',
+          error ?? s.t('If this email is registered, a reset link has been sent.'),
         ),
       ),
     );
@@ -88,6 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -119,7 +122,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Healthy Skin  ✦  Natural Beauty',
+                      s.t('Healthy Skin  ✦  Natural Beauty'),
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         letterSpacing: 1,
@@ -131,7 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 28),
               Text(
-                'Welcome back',
+                s.t('Welcome back'),
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.w600,
@@ -140,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Your glow journey continues',
+                s.t('Your glow journey continues'),
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   color: colors.mutedText,
@@ -149,27 +152,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 24),
               AppTextField(
                 controller: _emailController,
-                hint: 'Email address',
+                hint: s.t('Email address'),
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                validator: _emailValidator,
+                validator: (v) => _emailValidator(v, s),
               ),
               const SizedBox(height: 14),
               AppTextField(
                 controller: _passwordController,
-                hint: 'Password',
+                hint: s.t('Password'),
                 icon: Icons.lock_outline,
                 isPassword: true,
                 textInputAction: TextInputAction.done,
-                validator: _passwordValidator,
+                validator: (v) => _passwordValidator(v, s),
               ),
               Align(
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: TextButton(
                   onPressed: _isLoading ? null : _forgotPassword,
                   child: Text(
-                    'Forgot password?',
+                    s.t('Forgot password?'),
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: colors.mutedText,
@@ -179,7 +182,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 8),
               PrimaryButton(
-                label: 'Log In',
+                label: s.t('Log In'),
                 isLoading: _isLoading,
                 onPressed: _handleLogin,
               ),
@@ -192,7 +195,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     );
                   },
                   child: Text(
-                    'New here? Create an account',
+                    s.t('New here? Create an account'),
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -208,7 +211,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Navigator.of(context).pop();
                   },
                   child: Text(
-                    'Continue as Guest',
+                    s.t('Continue as Guest'),
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,

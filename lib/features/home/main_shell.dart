@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/localization/app_strings.dart';
+import '../../core/role/role_access.dart';
 import '../../core/role/role_provider.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../auth/auth_provider.dart';
 import '../developer/developer_console_screen.dart';
 import '../ingredients/ingredient_checker_screen.dart';
 import '../orders/order_history_screen.dart';
@@ -32,12 +34,28 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   Widget build(BuildContext context) {
     final activeRole = ref.watch(roleProvider);
+    final authStatus = ref.watch(authProvider);
+    final isAdmin = isAdminEmail(ref.read(authProvider.notifier).userEmail);
+
+    // Hard guard: never expose seller/dev portals to guests or non-admins,
+    // even if a stale role was restored from local storage.
+    final canUseSeller = authStatus == AuthStatus.loggedIn;
+    final canUseDeveloper = isAdmin;
+    final effectiveRole = (activeRole == AppRole.seller && !canUseSeller) ||
+            (activeRole == AppRole.developer && !canUseDeveloper)
+        ? AppRole.customer
+        : activeRole;
+    if (effectiveRole != activeRole) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(roleProvider.notifier).setRole(AppRole.customer);
+      });
+    }
 
     // Switch view according to active commercial role
-    if (activeRole == AppRole.seller) {
+    if (effectiveRole == AppRole.seller) {
       return const SellerDashboardScreen();
     }
-    if (activeRole == AppRole.developer) {
+    if (effectiveRole == AppRole.developer) {
       return const DeveloperConsoleScreen();
     }
 

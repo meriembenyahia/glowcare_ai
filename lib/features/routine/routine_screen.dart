@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../../core/theme/widgets/app_logo.dart';
 
 class RoutineStep {
   final String id;
@@ -45,6 +47,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
   void _showAddStepDialog() {
     final controller = TextEditingController();
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     showDialog(
       context: context,
@@ -52,7 +55,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
         backgroundColor: colors.background,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Add Routine Step',
+          s.t('Add Routine Step'),
           style: GoogleFonts.playfairDisplay(
             fontWeight: FontWeight.w700,
             color: colors.text,
@@ -62,7 +65,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
           controller: controller,
           style: TextStyle(color: colors.text),
           decoration: InputDecoration(
-            hintText: 'Step name (e.g., Face Oil)',
+            hintText: s.t('Step name (e.g., Face Oil)'),
             fillColor: colors.inputFill,
             filled: true,
             border: OutlineInputBorder(
@@ -74,7 +77,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: colors.mutedText)),
+            child: Text(s.t('Cancel'), style: GoogleFonts.poppins(color: colors.mutedText)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -95,7 +98,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
               }
               Navigator.of(context).pop();
             },
-            child: Text('Add', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            child: Text(s.t('Add'), style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -109,6 +112,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
     final doneCount = steps.where((s) => s.isCompleted).length;
     final double progress = total > 0 ? (doneCount / total).clamp(0.0, 1.0) : 0.0;
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -122,31 +126,35 @@ class _RoutineScreenState extends State<RoutineScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Daily Routine',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: colors.text,
+                  const AppLogo(size: 40),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.t('Daily Routine'),
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: colors.text,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Track your skincare steps every day',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: colors.mutedText,
+                        const SizedBox(height: 2),
+                        Text(
+                          s.t('Track your skincare steps every day'),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: colors.mutedText,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   IconButton(
                     onPressed: _showAddStepDialog,
                     icon: Icon(Icons.add_circle, color: colors.primary, size: 32),
-                    tooltip: 'Add Step',
+                    tooltip: s.t('Add Step'),
                   ),
                 ],
               ),
@@ -157,7 +165,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 children: [
                   Expanded(
                     child: _routineTab(
-                      label: 'Morning Routine',
+                      label: s.t('Morning Routine'),
                       icon: Icons.wb_sunny_outlined,
                       activeIcon: Icons.wb_sunny,
                       activeColor: Colors.amber.shade700,
@@ -167,7 +175,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _routineTab(
-                      label: 'Night Routine',
+                      label: s.t('Night Routine'),
                       icon: Icons.nightlight_round_outlined,
                       activeIcon: Icons.nightlight_round,
                       activeColor: Colors.indigo.shade600,
@@ -198,7 +206,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Progress',
+                          s.t('Progress'),
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -206,7 +214,11 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           ),
                         ),
                         Text(
-                          '$doneCount of $total completed (${(progress * 100).toInt()}%)',
+                          s.tf('{done} of {total} completed ({percent}%)', {
+                            'done': '$doneCount',
+                            'total': '$total',
+                            'percent': '${(progress * 100).toInt()}',
+                          }),
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -235,7 +247,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 child: total == 0
                     ? Center(
                         child: Text(
-                          'No routine steps yet.\nTap + to add one!',
+                          s.t('No routine steps yet.\nTap + to add one!'),
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(color: colors.mutedText),
                         ),
@@ -248,7 +260,6 @@ class _RoutineScreenState extends State<RoutineScreen> {
 
                           return Container(
                             decoration: BoxDecoration(
-                              color: colors.cardBackground,
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
@@ -258,34 +269,42 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                 ),
                               ],
                             ),
-                            child: CheckboxListTile(
-                              value: step.isCompleted,
-                              activeColor: colors.primary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                              controlAffinity: ListTileControlAffinity.leading,
-                              title: Text(
-                                'Step ${index + 1}: ${step.title}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: step.isCompleted ? colors.mutedText : colors.text,
-                                  decoration: step.isCompleted ? TextDecoration.lineThrough : null,
+                            child: Material(
+                              color: colors.cardBackground,
+                              borderRadius: BorderRadius.circular(16),
+                              clipBehavior: Clip.antiAlias,
+                              child: CheckboxListTile(
+                                value: step.isCompleted,
+                                activeColor: colors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                controlAffinity: ListTileControlAffinity.leading,
+                                title: Text(
+                                  s.tf('Step {n}: {title}', {
+                                    'n': '${index + 1}',
+                                    'title': s.t(step.title),
+                                  }),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: step.isCompleted ? colors.mutedText : colors.text,
+                                    decoration: step.isCompleted ? TextDecoration.lineThrough : null,
+                                  ),
                                 ),
-                              ),
-                              secondary: IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                                onPressed: () {
+                                secondary: IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                  onPressed: () {
+                                    setState(() {
+                                      steps.removeAt(index);
+                                    });
+                                  },
+                                ),
+                                onChanged: (val) {
                                   setState(() {
-                                    steps.removeAt(index);
+                                    step.isCompleted = val ?? false;
                                   });
                                 },
                               ),
-                              onChanged: (val) {
-                                setState(() {
-                                  step.isCompleted = val ?? false;
-                                });
-                              },
                             ),
                           );
                         },

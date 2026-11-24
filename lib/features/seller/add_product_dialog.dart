@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../shop/product.dart';
 import '../shop/product_provider.dart';
@@ -56,6 +57,7 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
   void _save() {
     if (!_formKey.currentState!.validate()) return;
 
+    final s = AppStrings.of(context);
     final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
     final ingredients = _ingredientsController.text
         .split(',')
@@ -84,7 +86,9 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(widget.productToEdit != null ? 'Product updated successfully' : 'Product added to store catalog'),
+        content: Text(widget.productToEdit != null
+            ? s.t('Product updated successfully')
+            : s.t('Product added to store catalog')),
         backgroundColor: AppColors.deepGreen,
       ),
     );
@@ -94,6 +98,7 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
   Widget build(BuildContext context) {
     final colors = AppThemeColors.of(context);
     final isEdit = widget.productToEdit != null;
+    final s = AppStrings.of(context);
 
     return Dialog(
       backgroundColor: colors.background,
@@ -113,7 +118,7 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        isEdit ? 'Edit Product' : 'Add New Product',
+                        isEdit ? s.t('Edit Product') : s.t('Add New Product'),
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -128,8 +133,8 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
                   ),
                   const SizedBox(height: 14),
 
-                  _field(colors, 'Product Name', _nameController, 'e.g. Pure Hyaluronic Serum', (v) {
-                    if (v == null || v.trim().isEmpty) return 'Product name is required';
+                  _field(colors, s.t('Product Name'), _nameController, s.t('e.g. Pure Hyaluronic Serum'), (v) {
+                    if (v == null || v.trim().isEmpty) return s.t('Product name is required');
                     return null;
                   }),
                   const SizedBox(height: 10),
@@ -137,16 +142,16 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
                   Row(
                     children: [
                       Expanded(
-                        child: _field(colors, 'Brand', _brandController, 'e.g. CeraVe', (v) {
-                          if (v == null || v.trim().isEmpty) return 'Brand is required';
+                        child: _field(colors, s.t('Brand'), _brandController, s.t('e.g. CeraVe'), (v) {
+                          if (v == null || v.trim().isEmpty) return s.t('Brand is required');
                           return null;
                         }),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _field(colors, 'Price (DA)', _priceController, 'e.g. 2800', (v) {
-                          if (v == null || v.trim().isEmpty) return 'Price required';
-                          if (double.tryParse(v) == null) return 'Valid number';
+                        child: _field(colors, s.t('Price (DA)'), _priceController, s.t('e.g. 2800'), (v) {
+                          if (v == null || v.trim().isEmpty) return s.t('Price required');
+                          if (double.tryParse(v) == null) return s.t('Valid number');
                           return null;
                         }, isNumber: true),
                       ),
@@ -154,7 +159,7 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
                   ),
                   const SizedBox(height: 10),
 
-                  Text('Category', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: colors.text)),
+                  Text(s.t('Category'), style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: colors.text)),
                   const SizedBox(height: 4),
                   DropdownButtonFormField<String>(
                     initialValue: _category,
@@ -168,7 +173,7 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
                     ),
                     items: [
                       for (final cat in _categories)
-                        DropdownMenuItem(value: cat, child: Text(cat, style: TextStyle(color: colors.text))),
+                        DropdownMenuItem(value: cat, child: Text(s.t(cat), style: TextStyle(color: colors.text))),
                     ],
                     onChanged: (v) {
                       if (v != null) setState(() => _category = v);
@@ -176,16 +181,16 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
                   ),
                   const SizedBox(height: 10),
 
-                  _field(colors, 'Image URL', _imageController, 'https://...', (v) {
-                    if (v == null || v.trim().isEmpty) return 'Image URL is required';
+                  _field(colors, s.t('Image URL'), _imageController, 'https://...', (v) {
+                    if (v == null || v.trim().isEmpty) return s.t('Image URL is required');
                     return null;
                   }),
                   const SizedBox(height: 10),
 
-                  _field(colors, 'Description', _descController, 'Brief product details...', null, maxLines: 2),
+                  _field(colors, s.t('Description'), _descController, s.t('Brief product details...'), null, maxLines: 2),
                   const SizedBox(height: 10),
 
-                  _field(colors, 'Ingredients (comma separated)', _ingredientsController, 'Niacinamide, Zinc, Aqua...', null),
+                  _field(colors, s.t('Ingredients (comma separated)'), _ingredientsController, s.t('Niacinamide, Zinc, Aqua...'), null),
                   const SizedBox(height: 20),
 
                   SizedBox(
@@ -199,7 +204,7 @@ class _AddProductDialogState extends ConsumerState<AddProductDialog> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       child: Text(
-                        isEdit ? 'Save Changes' : 'Add to Catalog',
+                        isEdit ? s.t('Save Changes') : s.t('Add to Catalog'),
                         style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
                       ),
                     ),

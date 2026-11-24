@@ -2,14 +2,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/services/ai_service.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/product_image.dart';
+import '../../core/utils/text_format.dart';
 import '../ai_advisor/ai_settings_dialog.dart';
+import '../auth/auth_provider.dart';
+import '../auth/member_lock_view.dart';
 import '../cart/cart_provider.dart';
 import '../shop/product.dart';
 import '../shop/product_details_screen.dart';
 import '../shop/product_provider.dart';
+
+const String kGreetingMessage =
+    'Hello! 🌸 I am your Beauty Lab Skincare AI.\n\n'
+    'Ask me anything about customized routines, active ingredients synergy (Retinol, Vitamin C, Niacinamide, BHA), product safety, or store recommendations in Algeria.\n\n'
+    '💬 You can write in العربية / الدارجة, Français, or English!';
 
 class ChatMessage {
   final String text;
@@ -17,6 +27,7 @@ class ChatMessage {
   final DateTime time;
   final List<Product>? recommendedProducts;
   final int? safetyScore;
+  final String? translationKey;
 
   ChatMessage({
     required this.text,
@@ -24,6 +35,7 @@ class ChatMessage {
     required this.time,
     this.recommendedProducts,
     this.safetyScore,
+    this.translationKey,
   });
 }
 
@@ -40,15 +52,16 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
   bool _hasApiKey = false;
+  AiProvider _provider = AiProvider.openai;
 
-  static const List<String> _quickPrompts = [
-    'روتين حب الشباب والبشرة الدهنية؟',
-    'Can I mix Retinol with Vitamin C?',
-    'شحال التوصيل لكل الولايات؟',
-    'Réparer barrière cutanée abîmée?',
-    'Best serum for dark spots & glow?',
-    'Safe ingredients for sensitive skin?',
-  ];
+  List<String> _quickPrompts(AppStrings s) => [
+        s.t('روتين حب الشباب والبشرة الدهنية؟'),
+        s.t('Can I mix Retinol with Vitamin C?'),
+        s.t('شحال التوصيل لكل الولايات؟'),
+        s.t('Réparer barrière cutanée abîmée?'),
+        s.t('Best serum for dark spots & glow?'),
+        s.t('Safe ingredients for sensitive skin?'),
+      ];
 
   @override
   void initState() {
@@ -56,20 +69,20 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
     _checkApiKey();
     _messages.add(
       ChatMessage(
-        text: 'Hello! 🌸 I am your **Beauty Lab Skincare AI**.\n\n'
-            'Ask me anything about customized routines, active ingredients synergy (Retinol, Vitamin C, Niacinamide, BHA), product safety, or store recommendations in Algeria.\n\n'
-            '💬 *You can write in العربية / الدارجة, Français, or English!*',
+        text: kGreetingMessage,
         isUser: false,
         time: DateTime.now(),
+        translationKey: kGreetingMessage,
       ),
     );
   }
 
   Future<void> _checkApiKey() async {
-    final key = await AiService.instance.getApiKey();
+    final config = await AiService.instance.getConfig();
     if (mounted) {
       setState(() {
-        _hasApiKey = key != null && key.isNotEmpty;
+        _hasApiKey = config.isConfigured;
+        _provider = config.provider;
       });
     }
   }
@@ -122,6 +135,7 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
       userMessage: text,
       conversationHistory: history,
       catalog: allProducts,
+      localeCode: Localizations.localeOf(context).languageCode,
     );
 
     final matched = _findRelevantProducts(text, responseText, allProducts);
@@ -159,16 +173,38 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
         if (combined.contains(ing.toLowerCase())) score += 3;
       }
 
-      if (combined.contains('acne') && (pDesc.contains('acne') || pDesc.contains('blemish') || pName.contains('effaclar'))) {
+      if ((combined.contains('acne') ||
+              combined.contains('حب الشباب') ||
+              combined.contains('دهنية')) &&
+          (pDesc.contains('acne') ||
+              pDesc.contains('blemish') ||
+              pName.contains('effaclar'))) {
         score += 5;
       }
-      if (combined.contains('retinol') && (pDesc.contains('retinol') || pName.contains('retinol'))) {
+      if ((combined.contains('retinol') || combined.contains('ريتينول')) &&
+          (pDesc.contains('retinol') || pName.contains('retinol'))) {
         score += 5;
       }
-      if (combined.contains('vitamin c') && (pDesc.contains('vitamin c') || pName.contains('vitamin c'))) {
+      if ((combined.contains('vitamin c') ||
+              combined.contains('فيتامين') ||
+              combined.contains('vitamine c')) &&
+          (pDesc.contains('vitamin c') ||
+              pName.contains('vitamin c') ||
+              pName.contains('glow'))) {
         score += 5;
       }
-      if (combined.contains('dry') && (pDesc.contains('moistur') || pName.contains('cerave'))) {
+      if ((combined.contains('dry') ||
+              combined.contains('جفاف') ||
+              combined.contains('sèche')) &&
+          (pDesc.contains('moistur') || pName.contains('cerave'))) {
+        score += 4;
+      }
+      if ((combined.contains('dark spot') ||
+              combined.contains('بقع') ||
+              combined.contains('tache')) &&
+          (pDesc.contains('dark spot') ||
+              pDesc.contains('brighten') ||
+              pName.contains('glow'))) {
         score += 4;
       }
 
@@ -185,6 +221,8 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
   Widget build(BuildContext context) {
     final colors = AppThemeColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = AppStrings.of(context);
+    final isGuest = ref.watch(authProvider) == AuthStatus.guest;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -193,21 +231,14 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
         elevation: 0,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.auto_awesome, color: colors.primary, size: 20),
-            ),
+            const AppLogo(size: 34),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Beauty Lab AI Advisor',
+                    s.t('Beauty Lab AI Advisor'),
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -226,7 +257,9 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        _hasApiKey ? 'ChatGPT (OpenAI) · Online' : 'Smart Skincare AI · Active',
+                        _hasApiKey
+                            ? '${s.t(_provider.labelKey)} · ${s.t('Online')}'
+                            : s.t('Smart Skincare AI · Active'),
                         style: GoogleFonts.poppins(fontSize: 10, color: colors.mutedText),
                       ),
                     ],
@@ -237,19 +270,22 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings_outlined, color: colors.primary),
-            tooltip: 'ChatGPT Settings (OpenAI Key)',
-            onPressed: () async {
-              await AiSettingsDialog.show(context);
-              _checkApiKey();
-            },
-          ),
+          if (!isGuest)
+            IconButton(
+              icon: Icon(Icons.settings_outlined, color: colors.primary),
+              tooltip: s.t('AI Advisor Settings'),
+              onPressed: () async {
+                await AiSettingsDialog.show(context);
+                _checkApiKey();
+              },
+            ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
+      body: isGuest
+          ? const MemberLockView()
+          : SafeArea(
+              child: Column(
+                children: [
             // Messages List
             Expanded(
               child: ListView.separated(
@@ -259,7 +295,7 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
                 separatorBuilder: (_, __) => const SizedBox(height: 14),
                 itemBuilder: (context, i) {
                   final msg = _messages[i];
-                  return _buildMessageBubble(msg, colors, isDark);
+                  return _buildMessageBubble(msg, colors, isDark, s);
                 },
               ),
             ),
@@ -278,23 +314,60 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
                     const SizedBox(width: 10),
                     Text(
                       _hasApiKey
-                          ? 'ChatGPT is analyzing your skincare profile...'
-                          : 'GlowCare AI is analyzing cosmetic formulations...',
+                          ? s.t('AI is analyzing your skincare profile...')
+                          : s.t('GlowCare AI is analyzing cosmetic formulations...'),
                       style: GoogleFonts.poppins(fontSize: 11, fontStyle: FontStyle.italic, color: colors.mutedText),
                     ),
                   ],
                 ),
               ),
 
+            if (!_hasApiKey)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: InkWell(
+                  onTap: () async {
+                    await AiSettingsDialog.show(context);
+                    _checkApiKey();
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.vpn_key_outlined, size: 16, color: colors.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            s.t('Connect a free AI key for deeper consultations'),
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                        Icon(s.chevronIcon(context), size: 14, color: colors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
             // Quick Prompt Suggestions
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
               child: Row(
                 children: [
-                  for (final prompt in _quickPrompts)
+                  for (final prompt in _quickPrompts(s))
                     Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsetsDirectional.only(end: 8),
                       child: ActionChip(
                         label: Text(prompt, style: GoogleFonts.poppins(fontSize: 11)),
                         backgroundColor: colors.cardBackground,
@@ -324,7 +397,7 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
                       controller: _textController,
                       style: GoogleFonts.poppins(fontSize: 13, color: colors.text),
                       decoration: InputDecoration(
-                        hintText: 'اسأل عن روتينك، الريتينول، أو استشر الذكاء الاصطناعي...',
+                        hintText: s.t('Ask about your routine, retinol, or consult the AI...'),
                         hintStyle: GoogleFonts.poppins(fontSize: 12, color: colors.mutedText),
                         fillColor: colors.inputFill,
                         filled: true,
@@ -354,24 +427,33 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage msg, AppThemeColors colors, bool isDark) {
+  Widget _buildMessageBubble(
+    ChatMessage msg,
+    AppThemeColors colors,
+    bool isDark,
+    AppStrings s,
+  ) {
+    final text = msg.translationKey != null
+        ? s.t(msg.translationKey!)
+        : msg.text;
+
     if (msg.isUser) {
       return Align(
-        alignment: Alignment.centerRight,
+        alignment: AlignmentDirectional.centerEnd,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 290),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: colors.primary,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(18),
-              bottomRight: Radius.circular(4),
+            borderRadius: const BorderRadiusDirectional.only(
+              topStart: Radius.circular(18),
+              topEnd: Radius.circular(18),
+              bottomStart: Radius.circular(18),
+              bottomEnd: Radius.circular(4),
             ),
           ),
           child: Text(
-            msg.text,
+            text,
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
           ),
         ),
@@ -380,17 +462,17 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
 
     // AI Response Bubble
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 330),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: colors.cardBackground,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-            bottomRight: Radius.circular(18),
-            bottomLeft: Radius.circular(4),
+          borderRadius: const BorderRadiusDirectional.only(
+            topStart: Radius.circular(18),
+            topEnd: Radius.circular(18),
+            bottomStart: Radius.circular(4),
+            bottomEnd: Radius.circular(18),
           ),
           border: Border.all(color: colors.primary.withValues(alpha: 0.12)),
           boxShadow: [
@@ -409,15 +491,22 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
               children: [
                 Icon(Icons.auto_awesome, color: colors.primary, size: 15),
                 const SizedBox(width: 6),
-                Text(
-                  _hasApiKey ? 'ChatGPT Skincare Expert' : 'GlowCare Beauty Lab AI',
-                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: colors.primary),
+                Flexible(
+                  child: Text(
+                    _hasApiKey
+                        ? s.t('ChatGPT Skincare Expert')
+                        : s.t('GlowCare Beauty Lab AI'),
+                    style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: colors.primary),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              msg.text,
+              stripMarkdown(text),
               style: GoogleFonts.poppins(fontSize: 12.5, height: 1.55, color: colors.text),
             ),
 
@@ -425,13 +514,13 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
             if (msg.recommendedProducts != null && msg.recommendedProducts!.isNotEmpty) ...[
               const SizedBox(height: 14),
               Text(
-                'Recommended Store Products:',
+                s.t('Recommended Store Products:'),
                 style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: colors.primary),
               ),
               const SizedBox(height: 8),
               for (final p in msg.recommendedProducts!)
                 Container(
-                  margin: const EdgeInsets.only(bottom: 6),
+                  margin: const EdgeInsetsDirectional.only(bottom: 6),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: colors.inputFill,
@@ -456,7 +545,7 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
                               style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: colors.text),
                             ),
                             Text(
-                              '${p.price.toStringAsFixed(0)} DA',
+                              s.money(p.price),
                               style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: colors.primary),
                             ),
                           ],
@@ -464,16 +553,19 @@ class _IngredientCheckerScreenState extends ConsumerState<IngredientCheckerScree
                       ),
                       IconButton(
                         icon: Icon(Icons.add_shopping_cart, size: 18, color: colors.primary),
-                        tooltip: 'Add to Cart',
+                        tooltip: s.t('Add to Cart'),
                         onPressed: () {
                           ref.read(cartProvider.notifier).add(p);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('${p.name} added to cart!'), backgroundColor: AppColors.deepGreen),
+                            SnackBar(
+                              content: Text(s.tf('{name} added to cart!', {'name': p.name})),
+                              backgroundColor: AppColors.deepGreen,
+                            ),
                           );
                         },
                       ),
                       IconButton(
-                        icon: Icon(Icons.arrow_forward_ios, size: 12, color: colors.mutedText),
+                        icon: Icon(s.chevronIcon(context), size: 16, color: colors.mutedText),
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: p)),

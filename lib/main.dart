@@ -13,6 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseService.initialize();
   await AiService.instance.init();
+  await LocaleNotifier.loadInitialLocale();
 
   runApp(const ProviderScope(child: GlowCareApp()));
 }

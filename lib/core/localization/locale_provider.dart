@@ -3,27 +3,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/widgets/app_colors.dart';
+import 'app_strings.dart';
 
 class LocaleNotifier extends Notifier<Locale> {
   static const String _keyLocale = 'app_language_code';
 
-  @override
-  Locale build() {
-    _initLocale();
-    return const Locale('ar'); // Default to Arabic as requested!
-  }
+  /// Loaded synchronously before `runApp` so the first frame already uses the
+  /// saved language (no flash / no half-translated first page).
+  static Locale initialLocale = const Locale('ar');
 
-  Future<void> _initLocale() async {
+  static Future<void> loadInitialLocale() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final code = prefs.getString(_keyLocale);
-      if (code != null && (code == 'ar' || code == 'fr' || code == 'en')) {
-        state = Locale(code);
-      } else {
-        state = const Locale('ar');
+      if (code == 'ar' || code == 'fr' || code == 'en') {
+        initialLocale = Locale(code!);
       }
-    } catch (_) {}
+    } catch (_) {
+      initialLocale = const Locale('ar');
+    }
   }
+
+  @override
+  Locale build() => initialLocale;
 
   Future<void> setLanguageCode(String code) async {
     if (state.languageCode == code) return;
@@ -55,6 +57,7 @@ class LanguagePickerDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentLocale = ref.watch(localeProvider);
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     final languages = [
       {'code': 'ar', 'name': 'العربية (Arabic)', 'flag': '🇩🇿', 'desc': 'اللغة الافتراضية مع دعم RTL'},
@@ -87,7 +90,7 @@ class LanguagePickerDialog extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'اختر لغة التطبيق',
+                        s.language,
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -95,7 +98,7 @@ class LanguagePickerDialog extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        'Change Application Language',
+                        s.t('Change Application Language'),
                         style: GoogleFonts.poppins(fontSize: 11, color: colors.mutedText),
                       ),
                     ],
@@ -115,10 +118,13 @@ class LanguagePickerDialog extends ConsumerWidget {
                 child: InkWell(
                   onTap: () {
                     ref.read(localeProvider.notifier).setLanguageCode(lang['code']!);
+                    final messenger = ScaffoldMessenger.of(context);
                     Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(
-                        content: Text('تم تفعيل اللغة: ${lang['name']}'),
+                        content: Text(s.tf('Language changed to {language}', {
+                          'language': lang['name']!,
+                        })),
                         backgroundColor: Colors.green,
                         duration: const Duration(seconds: 2),
                       ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/product_image.dart';
 import 'product.dart';
 import 'product_details_screen.dart';
@@ -61,6 +63,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(productsProvider);
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -70,13 +73,19 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Shop',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: colors.text,
-                ),
+              Row(
+                children: [
+                  const AppLogo(size: 30),
+                  const SizedBox(width: 8),
+                  Text(
+                    s.t('Shop'),
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: colors.text,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
 
@@ -86,7 +95,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 onChanged: (v) => setState(() => _query = v),
                 style: TextStyle(color: colors.text),
                 decoration: InputDecoration(
-                  hintText: 'Search products or brands...',
+                  hintText: s.t('Search products or brands...'),
                   prefixIcon: Icon(Icons.search, color: colors.mutedText, size: 20),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   fillColor: colors.inputFill,
@@ -110,7 +119,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     final cat = _categories[i];
                     final active = cat == _selected;
                     return ChoiceChip(
-                      label: Text(cat),
+                      label: Text(s.t(cat)),
                       selected: active,
                       onSelected: (_) => setState(() => _selected = cat),
                       selectedColor: colors.primary,
@@ -137,7 +146,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     final sort = _sorts[i];
                     final active = sort == _sort;
                     return ChoiceChip(
-                      label: Text(sort),
+                      label: Text(s.t(sort)),
                       selected: active,
                       onSelected: (_) => setState(() => _sort = sort),
                       selectedColor: colors.primary.withValues(alpha: 0.3),
@@ -167,7 +176,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Failed to load products.\nCheck your internet connection.',
+                          s.t('Failed to load products.\nCheck your internet connection.'),
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(color: colors.mutedText),
                         ),
@@ -178,7 +187,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                             foregroundColor: AppColors.white,
                           ),
                           onPressed: () => ref.invalidate(productsProvider),
-                          child: const Text('Retry'),
+                          child: Text(s.t('Retry')),
                         ),
                       ],
                     ),
@@ -209,8 +218,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       return Center(
                         child: Text(
                           _selected == 'Favorites ❤️'
-                              ? 'No favorite products yet ❤️'
-                              : 'No products found',
+                              ? s.t('No favorite products yet ❤️')
+                              : s.t('No products found'),
                           style: GoogleFonts.poppins(color: colors.mutedText),
                         ),
                       );
@@ -255,6 +264,7 @@ class _ShopCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isFav = ref.watch(wishlistProvider).contains(product.id);
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -273,7 +283,7 @@ class _ShopCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Align(
-            alignment: Alignment.topRight,
+            alignment: AlignmentDirectional.topEnd,
             child: GestureDetector(
               onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
               child: Icon(
@@ -293,6 +303,7 @@ class _ShopCard extends ConsumerWidget {
             product.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            textDirection: TextDirection.ltr,
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -308,7 +319,7 @@ class _ShopCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${product.price.toStringAsFixed(0)} DA',
+                s.money(product.price),
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/services/ai_service.dart';
+import '../../core/theme/widgets/app_bar_title.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/product_image.dart';
+import '../../core/utils/text_format.dart';
+import '../auth/auth_provider.dart';
+import '../auth/member_lock_view.dart';
 import '../ingredients/ingredient_checker_screen.dart';
 import '../shop/product.dart';
 import '../shop/product_details_screen.dart';
@@ -14,6 +19,7 @@ class SkinDiagnosis {
   final int healthScore;
   final String conditionSummary;
   final String keyRecommendation;
+  final String environmentNote;
   final List<String> morningRoutine;
   final List<String> nightRoutine;
   final List<String> targetActives;
@@ -24,6 +30,7 @@ class SkinDiagnosis {
     required this.healthScore,
     required this.conditionSummary,
     required this.keyRecommendation,
+    required this.environmentNote,
     required this.morningRoutine,
     required this.nightRoutine,
     required this.targetActives,
@@ -44,6 +51,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
   bool _isAnalyzing = false;
   bool _isLoadingGpt = false;
   String? _gptReport;
+  String? _gptError;
 
   String? _skinType;
   String? _concern;
@@ -81,6 +89,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
     final List<String> keywords = [];
     String summary = '';
     String recommendation = '';
+    String envNote = '';
 
     // 1. Skin Type Logic
     switch (skinType) {
@@ -223,18 +232,18 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
     switch (environment) {
       case 'Urban / Polluted':
         score -= 3;
-        recommendation += ' Due to city smog and airborne particulates, double-cleansing in the evening is mandatory to prevent oxidative aging.';
+        envNote = ' Due to city smog and airborne particulates, double-cleansing in the evening is mandatory to prevent oxidative aging.';
         break;
       case 'Dry & Cold Climate':
         score -= 4;
-        recommendation += ' Cold winds strip lipids rapidly; apply hyaluronic serum strictly on damp skin followed by an occlusive cream.';
+        envNote = ' Cold winds strip lipids rapidly; apply hyaluronic serum strictly on damp skin followed by an occlusive cream.';
         break;
       case 'Hot & Humid':
-        recommendation += ' Switch to water-gel textures to avoid pore clogging during sweat and high sebum hours.';
+        envNote = ' Switch to water-gel textures to avoid pore clogging during sweat and high sebum hours.';
         break;
       case 'Indoor AC / Heating':
         score -= 3;
-        recommendation += ' Continuous AC/heating leaches epidermal moisture; reapply light hydration or facial mist during the day.';
+        envNote = ' Continuous AC/heating leaches epidermal moisture; reapply light hydration or facial mist during the day.';
         break;
     }
 
@@ -242,6 +251,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
       healthScore: score.clamp(68, 97),
       conditionSummary: summary,
       keyRecommendation: recommendation,
+      environmentNote: envNote,
       morningRoutine: morning,
       nightRoutine: night,
       targetActives: targetActives,
@@ -254,6 +264,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
     setState(() {
       _isAnalyzing = true;
       _gptReport = null;
+      _gptError = null;
     });
     await Future.delayed(const Duration(milliseconds: 1400));
     if (mounted) {
@@ -265,13 +276,18 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
   }
 
   Future<void> _fetchGptReport(List<Product> catalog) async {
-    setState(() => _isLoadingGpt = true);
+    final s = AppStrings.of(context);
+    setState(() {
+      _isLoadingGpt = true;
+      _gptError = null;
+    });
     try {
       final report = await AiService.instance.analyzeSkinProfileWithGpt(
         skinType: _skinType ?? 'Normal Skin',
         primaryConcern: _concern ?? 'Dullness',
         environment: _environment ?? 'Urban / Polluted',
         catalog: catalog,
+        localeCode: s.languageCode,
       );
       if (mounted) {
         setState(() {
@@ -283,7 +299,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
       if (mounted) {
         setState(() {
           _isLoadingGpt = false;
-          _gptReport = 'Could not generate AI report: $e';
+          _gptError = e.toString();
         });
       }
     }
@@ -316,6 +332,8 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
     final productsAsync = ref.watch(productsProvider);
     final colors = AppThemeColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final s = AppStrings.of(context);
+    final isGuest = ref.watch(authProvider) == AuthStatus.guest;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -323,41 +341,38 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
         backgroundColor: colors.background,
         elevation: 0,
         centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.auto_awesome, color: colors.primary, size: 20),
-            const SizedBox(width: 6),
-            Text(
-              'AI Skin Advisor',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: colors.text,
-              ),
-            ),
-          ],
+        title: AppBarTitle(
+          text: s.t('AI Skin Advisor'),
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: colors.text,
+          ),
         ),
         iconTheme: IconThemeData(color: colors.text),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings_outlined, color: colors.primary),
-            tooltip: 'ChatGPT Settings',
-            onPressed: () => AiSettingsDialog.show(context),
-          ),
+          if (!isGuest)
+            IconButton(
+              icon: Icon(Icons.settings_outlined, color: colors.primary),
+              tooltip: s.t('ChatGPT Settings'),
+              onPressed: () => AiSettingsDialog.show(context),
+            ),
         ],
       ),
-      body: SafeArea(
-        child: _isAnalyzing
-            ? _buildAnalyzingState(colors)
-            : _step < 3
-                ? _buildQuizStep(colors, isDark)
-                : _buildResultsState(productsAsync, colors, isDark),
-      ),
+      body: isGuest
+          ? const MemberLockView()
+          : SafeArea(
+              child: _isAnalyzing
+                  ? _buildAnalyzingState(colors)
+                  : _step < 3
+                      ? _buildQuizStep(colors, isDark)
+                      : _buildResultsState(productsAsync, colors, isDark),
+            ),
     );
   }
 
   Widget _buildAnalyzingState(AppThemeColors colors) {
+    final s = AppStrings.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -365,7 +380,8 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
           CircularProgressIndicator(color: colors.primary),
           const SizedBox(height: 24),
           Text(
-            'Analyzing your skin profile...',
+            s.t('Analyzing your skin profile...'),
+            textAlign: TextAlign.center,
             style: GoogleFonts.playfairDisplay(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -374,7 +390,8 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Matching dermatological formulas & ingredient safety...',
+            s.t('Matching dermatological formulas & ingredient safety...'),
+            textAlign: TextAlign.center,
             style: GoogleFonts.poppins(fontSize: 12, color: colors.mutedText),
           ),
         ],
@@ -383,11 +400,12 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
   }
 
   Widget _buildQuizStep(AppThemeColors colors, bool isDark) {
+    final s = AppStrings.of(context);
     final title = _step == 0
-        ? 'What is your Skin Type?'
+        ? s.t('What is your Skin Type?')
         : _step == 1
-            ? 'What is your primary Concern?'
-            : 'What is your Environment?';
+            ? s.t('What is your primary Concern?')
+            : s.t('What is your Environment?');
 
     final options = _step == 0
         ? _skinTypes
@@ -426,7 +444,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
           const SizedBox(height: 20),
 
           Text(
-            'Step ${_step + 1} of 3',
+            s.tf('Step {n} of 3', {'n': '${_step + 1}'}),
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -491,7 +509,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                item['title']!,
+                                s.t(item['title']!),
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -499,7 +517,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                                 ),
                               ),
                               Text(
-                                item['desc']!,
+                                s.t(item['desc']!),
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   color: colors.mutedText,
@@ -535,7 +553,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(
-                _step == 2 ? 'Generate AI Analysis' : 'Next Step →',
+                s.t(_step == 2 ? 'Generate AI Analysis' : 'Next Step →'),
                 style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
@@ -550,6 +568,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
     AppThemeColors colors,
     bool isDark,
   ) {
+    final s = AppStrings.of(context);
     final diagnosis = _computeDiagnosis(
       _skinType ?? 'Normal Skin',
       _concern ?? 'Dullness',
@@ -583,7 +602,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'AI Skin Health Report',
+                      s.t('AI Skin Health Report'),
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -597,7 +616,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${diagnosis.healthScore}% Score',
+                        s.tf('{score}% Score', {'score': '${diagnosis.healthScore}'}),
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -609,7 +628,13 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Profile: $_skinType  •  Target: $_concern',
+                  s.tf(
+                    'Profile: {skin}  •  Target: {concern}',
+                    {
+                      'skin': s.t(_skinType ?? 'Normal Skin'),
+                      'concern': s.t(_concern ?? 'Dullness'),
+                    },
+                  ),
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -618,7 +643,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  diagnosis.conditionSummary,
+                  s.t(diagnosis.conditionSummary),
                   style: GoogleFonts.poppins(fontSize: 12, height: 1.5, color: colors.text),
                 ),
                 const SizedBox(height: 10),
@@ -635,7 +660,8 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          diagnosis.keyRecommendation,
+                          s.t(diagnosis.keyRecommendation) +
+                              s.t(diagnosis.environmentNote),
                           style: GoogleFonts.poppins(fontSize: 11, height: 1.5, color: colors.text),
                         ),
                       ),
@@ -665,14 +691,14 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                         children: [
                           const Icon(Icons.check_circle, size: 16, color: Colors.green),
                           const SizedBox(width: 6),
-                          Text('Recommended Actives', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: colors.text)),
+                          Text(s.t('Recommended Actives'), style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: colors.text)),
                         ],
                       ),
                       const SizedBox(height: 8),
                       for (final a in diagnosis.targetActives)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text('• $a', style: GoogleFonts.poppins(fontSize: 11, color: colors.text)),
+                          child: Text('• ${s.t(a)}', style: GoogleFonts.poppins(fontSize: 11, color: colors.text)),
                         ),
                     ],
                   ),
@@ -690,18 +716,23 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.cancel, size: 16, color: Colors.redAccent),
-                          SizedBox(width: 6),
-                          Text('Ingredients to Avoid', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.redAccent)),
+                          const Icon(Icons.cancel, size: 16, color: Colors.redAccent),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              s.t('Ingredients to Avoid'),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.redAccent),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       for (final av in diagnosis.avoidActives)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text('• $av', style: GoogleFonts.poppins(fontSize: 11, color: colors.text)),
+                          child: Text('• ${s.t(av)}', style: GoogleFonts.poppins(fontSize: 11, color: colors.text)),
                         ),
                     ],
                   ),
@@ -713,7 +744,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
 
           // 3. Dynamic Daily Routine
           Text(
-            'Personalized Daily Routine',
+            s.t('Personalized Daily Routine'),
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -721,9 +752,9 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          _routineCard('Morning Routine (AM)', diagnosis.morningRoutine, colors),
+          _routineCard(s.t('Morning Routine (AM)'), diagnosis.morningRoutine, colors),
           const SizedBox(height: 10),
-          _routineCard('Night Routine (PM)', diagnosis.nightRoutine, colors),
+          _routineCard(s.t('Night Routine (PM)'), diagnosis.nightRoutine, colors),
           const SizedBox(height: 20),
 
           // 3.5. ChatGPT Live Consultation Section
@@ -760,7 +791,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Deep ChatGPT Skincare Protocol',
+                            s.t('Deep ChatGPT Skincare Protocol'),
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -768,7 +799,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                             ),
                           ),
                           Text(
-                            'تحليل واستشارة سريرية بالذكاء الاصطناعي',
+                            s.t('AI-powered clinical analysis & consultation'),
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               color: colors.mutedText,
@@ -788,8 +819,21 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      _gptReport!,
+                      stripMarkdown(_gptReport!),
                       style: GoogleFonts.poppins(fontSize: 12, height: 1.6, color: colors.text),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ] else if (_gptError != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      s.tf('Could not generate AI report: {error}', {'error': _gptError!}),
+                      style: GoogleFonts.poppins(fontSize: 12, height: 1.5, color: colors.text),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -812,7 +856,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                               )
                             : const Icon(Icons.auto_awesome, size: 16),
                         label: Text(
-                          _gptReport == null ? 'Generate ChatGPT Protocol' : 'Refresh AI Protocol',
+                          s.t(_gptReport == null ? 'Generate ChatGPT Protocol' : 'Refresh AI Protocol'),
                           style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -831,7 +875,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                         );
                       },
                       icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                      label: const Text('Live Chat', style: TextStyle(fontSize: 12)),
+                      label: Text(s.t('Live Chat'), style: const TextStyle(fontSize: 12)),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: colors.primary),
                         foregroundColor: colors.primary,
@@ -848,7 +892,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
 
           // 4. Targeted Store Products
           Text(
-            'Tailored Store Products for You',
+            s.t('Tailored Store Products for You'),
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -897,6 +941,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                               p.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              textDirection: TextDirection.ltr,
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -909,7 +954,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${p.price.toStringAsFixed(0)} DA',
+                              s.money(p.price),
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -938,7 +983,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(
-                'Retake AI Quiz with Different Choices',
+                s.t('Retake AI Quiz with Different Choices'),
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -953,6 +998,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
   }
 
   Widget _routineCard(String title, List<String> steps, AppThemeColors colors) {
+    final s = AppStrings.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -994,7 +1040,7 @@ class _AiSkinAnalysisScreenState extends ConsumerState<AiSkinAnalysisScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      steps[i],
+                      s.t(steps[i]),
                       style: GoogleFonts.poppins(fontSize: 12, color: colors.text),
                     ),
                   ),

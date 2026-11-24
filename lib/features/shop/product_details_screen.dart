@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
+import '../../core/theme/widgets/app_bar_title.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/product_image.dart';
 import '../cart/cart_provider.dart';
@@ -23,9 +25,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     final product = widget.product;
     final isFavorite = ref.watch(wishlistProvider).contains(product.id);
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
     final ingredientsText = product.ingredients.isNotEmpty
         ? product.ingredients.join(', ')
-        : 'Water, Glycerin, Niacinamide, Hyaluronic Acid, Ceramides 1, 3, 6-II, Centella Asiatica Extract.';
+        : s.t('Water, Glycerin, Niacinamide, Hyaluronic Acid, Ceramides 1, 3, 6-II, Centella Asiatica Extract.');
 
     return DefaultTabController(
       length: 3,
@@ -35,8 +38,8 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           backgroundColor: colors.background,
           elevation: 0,
           centerTitle: true,
-          title: Text(
-            'Product Details',
+          title: AppBarTitle(
+            text: s.t('Product Details'),
             style: GoogleFonts.poppins(
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -50,6 +53,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                 isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: isFavorite ? Colors.redAccent : colors.text,
               ),
+              tooltip: s.t('Wishlist'),
               onPressed: () => ref.read(wishlistProvider.notifier).toggle(product.id),
             ),
             const SizedBox(width: 8),
@@ -133,7 +137,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${product.brand}  ✦  ${product.category}',
+                                  '${product.brand}  ✦  ${s.t(product.category)}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
@@ -154,7 +158,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                               ),
                             ),
                             child: Text(
-                              '50 ml',
+                              s.t('50 ml'),
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -176,7 +180,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           const Icon(Icons.star_half, size: 16, color: Colors.amber),
                           const SizedBox(width: 6),
                           Text(
-                            '${product.rating} (2.4k reviews)',
+                            s.tf('{rating} ({count} reviews)', {
+                              'rating': '${product.rating}',
+                              'count': '2.4k',
+                            }),
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               color: colors.mutedText,
@@ -188,7 +195,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
 
                       // 4. السعر بالدينار DA
                       Text(
-                        '${product.price.toStringAsFixed(0)} DA',
+                        s.money(product.price),
                         style: GoogleFonts.poppins(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
@@ -207,10 +214,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
-                        tabs: const [
-                          Tab(text: 'Details'),
-                          Tab(text: 'Ingredients'),
-                          Tab(text: 'Reviews'),
+                        tabs: [
+                          Tab(text: s.t('Details')),
+                          Tab(text: s.t('Ingredients')),
+                          Tab(text: s.t('Reviews')),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -226,17 +233,21 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    children: const [
-                                      _FeaturePill(icon: Icons.check_circle_outline, label: 'Fragrance Free'),
-                                      SizedBox(width: 8),
-                                      _FeaturePill(icon: Icons.verified_user_outlined, label: 'Dermatologist Tested'),
+                                    children: [
+                                      _FeaturePill(icon: Icons.check_circle_outline, label: s.t('Fragrance Free')),
+                                      const SizedBox(width: 8),
+                                      _FeaturePill(icon: Icons.verified_user_outlined, label: s.t('Dermatologist Tested')),
                                     ],
                                   ),
                                   const SizedBox(height: 10),
                                   Text(
-                                    product.description.isNotEmpty
-                                        ? product.description
-                                        : 'Provides 24-hour hydration and helps restore the protective skin barrier with essential ceramides & hyaluronic acid.',
+                                    s.productDescription(
+                                      product.id,
+                                      product.description.isNotEmpty
+                                          ? product.description
+                                          : s.t(
+                                              'Provides 24-hour hydration and helps restore the protective skin barrier with essential ceramides & hyaluronic acid.'),
+                                    ),
                                     style: GoogleFonts.poppins(
                                       fontSize: 13,
                                       height: 1.6,
@@ -273,7 +284,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '"Excellent product for my daily skincare routine! Highly recommended for sensitive skin."',
+                                    s.t('"Excellent product for my daily skincare routine! Highly recommended for sensitive skin."'),
                                     style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontStyle: FontStyle.italic,
@@ -312,7 +323,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       ref.read(cartProvider.notifier).add(product);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('${product.name} added to cart!'),
+                          content: Text(s.tf('{name} added to cart!', {'name': product.name})),
                           backgroundColor: colors.primary,
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -327,7 +338,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                     ),
                     icon: const Icon(Icons.shopping_bag_outlined, size: 20),
                     label: Text(
-                      'Add to Cart',
+                      s.t('Add to Cart'),
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,

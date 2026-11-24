@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/app_logo.dart';
 import '../home/main_shell.dart';
@@ -15,6 +16,7 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -56,7 +58,7 @@ class OnboardingScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Healthy Skin  ✦  Natural Beauty',
+                    s.t('Healthy Skin  ✦  Natural Beauty'),
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       letterSpacing: 1,
@@ -65,7 +67,7 @@ class OnboardingScreen extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    'Your personalized\nskincare & makeup companion',
+                    s.t('Your personalized\nskincare & makeup companion'),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -84,19 +86,24 @@ class OnboardingScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => _goToHome(context),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Get Started'),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward, size: 18),
+                        Text(s.t('Get Started')),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Directionality.of(context) == TextDirection.rtl
+                              ? Icons.arrow_back
+                              : Icons.arrow_forward,
+                          size: 18,
+                        ),
                       ],
                     ),
                   ),
                   TextButton(
                     onPressed: () => _goToHome(context),
                     child: Text(
-                      'Skip',
+                      s.t('Skip'),
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         color: AppColors.darkText,

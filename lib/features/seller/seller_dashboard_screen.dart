@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/role/role_provider.dart';
 import '../../core/theme/widgets/app_colors.dart';
+import '../../core/theme/widgets/app_logo.dart';
 import '../../core/theme/widgets/product_image.dart';
 import '../orders/order_model.dart';
 import '../orders/orders_provider.dart';
+import '../orders/payment_method.dart';
 import '../shop/product.dart';
 import '../shop/product_provider.dart';
 import 'add_product_dialog.dart';
@@ -57,6 +60,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final orders = ref.watch(ordersProvider);
     final productsAsync = ref.watch(productsProvider);
+    final s = AppStrings.of(context);
 
     // KPI Metrics calculation
     final totalRevenue = orders.fold<double>(0.0, (sum, o) => sum + o.total);
@@ -70,21 +74,14 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
         elevation: 0,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.storefront, color: colors.primary, size: 22),
-            ),
+            const AppLogo(size: 34),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Seller Dashboard',
+                    s.t('Seller Dashboard'),
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -92,7 +89,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                     ),
                   ),
                   Text(
-                    'GlowCare Merchant Portal · متجر التاجر',
+                    s.t('GlowCare Merchant Portal'),
                     style: GoogleFonts.poppins(
                       fontSize: 10,
                       color: colors.mutedText,
@@ -110,7 +107,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
             },
             icon: Icon(Icons.swap_horiz, size: 16, color: colors.primary),
             label: Text(
-              'Customer View',
+              s.t('Customer View'),
               style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: colors.primary),
             ),
           ),
@@ -123,10 +120,10 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
           indicatorColor: colors.primary,
           labelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
           unselectedLabelStyle: GoogleFonts.poppins(fontSize: 13),
-          tabs: const [
-            Tab(icon: Icon(Icons.receipt_long, size: 20), text: 'Orders'),
-            Tab(icon: Icon(Icons.inventory_2, size: 20), text: 'Products'),
-            Tab(icon: Icon(Icons.analytics, size: 20), text: 'Analytics & Settings'),
+          tabs: [
+            Tab(icon: const Icon(Icons.receipt_long, size: 20), text: s.t('Orders')),
+            Tab(icon: const Icon(Icons.inventory_2, size: 20), text: s.t('Products')),
+            Tab(icon: const Icon(Icons.analytics, size: 20), text: s.t('Analytics & Settings')),
           ],
         ),
       ),
@@ -161,6 +158,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
     int pendingCount,
     int productsCount,
   ) {
+    final s = AppStrings.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
@@ -169,13 +167,13 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
       ),
       child: Row(
         children: [
-          _kpiCard(colors, 'Total Sales', '${totalRevenue.toStringAsFixed(0)} DA', Icons.monetization_on_outlined, colors.primary),
+          _kpiCard(colors, s.t('Total Sales'), s.money(totalRevenue), Icons.monetization_on_outlined, colors.primary),
           const SizedBox(width: 8),
-          _kpiCard(colors, 'Orders', '$ordersCount', Icons.shopping_bag_outlined, Colors.blue),
+          _kpiCard(colors, s.t('Orders'), '$ordersCount', Icons.shopping_bag_outlined, Colors.blue),
           const SizedBox(width: 8),
-          _kpiCard(colors, 'Pending', '$pendingCount', Icons.hourglass_top, Colors.amber.shade800),
+          _kpiCard(colors, s.t('Pending'), '$pendingCount', Icons.hourglass_top, Colors.amber.shade800),
           const SizedBox(width: 8),
-          _kpiCard(colors, 'Catalog', '$productsCount', Icons.category_outlined, Colors.purple),
+          _kpiCard(colors, s.t('Catalog'), '$productsCount', Icons.category_outlined, Colors.purple),
         ],
       ),
     );
@@ -222,6 +220,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
 
   // ================= 1. ORDERS TAB =================
   Widget _buildOrdersTab(AppThemeColors colors, bool isDark, List<Order> orders) {
+    final s = AppStrings.of(context);
     final filtered = _orderFilter == 'All'
         ? orders
         : orders.where((o) => o.status.toLowerCase() == _orderFilter.toLowerCase()).toList();
@@ -236,9 +235,9 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
             children: [
               for (final f in ['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'])
                 Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsetsDirectional.only(end: 8),
                   child: ChoiceChip(
-                    label: Text(f, style: GoogleFonts.poppins(fontSize: 11)),
+                    label: Text(s.t(f), style: GoogleFonts.poppins(fontSize: 11)),
                     selected: _orderFilter == f,
                     selectedColor: colors.primary,
                     labelStyle: TextStyle(
@@ -267,8 +266,10 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                       const SizedBox(height: 10),
                       Text(
                         _orderFilter == 'All'
-                            ? 'No customer orders received yet'
-                            : 'No orders with status "$_orderFilter"',
+                            ? s.t('No customer orders received yet')
+                            : s.tf('No orders with status "{status}"',
+                                {'status': s.t(_orderFilter)}),
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(fontSize: 13, color: colors.mutedText),
                       ),
                     ],
@@ -281,6 +282,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                   itemBuilder: (context, i) {
                     final order = filtered[i];
                     final statusColor = _statusColor(order.status);
+                    final payment = paymentMethodFromName(order.paymentMethod);
 
                     return Container(
                       padding: const EdgeInsets.all(16),
@@ -306,7 +308,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                               Row(
                                 children: [
                                   Text(
-                                    'Order #${order.id}',
+                                    s.tf('Order #{id}', {'id': order.id.toString()}),
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
@@ -355,11 +357,41 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                               ),
                             ],
                           ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(payment.icon, size: 15, color: colors.mutedText),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '${s.t('Payment')}: ${s.t(payment.labelKey)}'
+                                  '${order.paymentReference.isNotEmpty ? ' · ${order.paymentReference}' : ''}',
+                                  style: GoogleFonts.poppins(fontSize: 11, color: colors.mutedText),
+                                ),
+                              ),
+                              if (order.paymentStatus == 'pending')
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    s.t('Awaiting payment verification'),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange.shade800,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                           const SizedBox(height: 10),
 
                           // Items preview
                           Text(
-                            'Items ordered (${order.items.length}):',
+                            s.tf('Items ordered ({count}):', {'count': '${order.items.length}'}),
                             style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: colors.mutedText),
                           ),
                           const SizedBox(height: 4),
@@ -375,7 +407,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.poppins(fontSize: 12, color: colors.text)),
                                   ),
-                                  Text('${(it.product.price * it.quantity).toStringAsFixed(0)} DA',
+                                  Text(s.money(it.product.price * it.quantity),
                                       style: GoogleFonts.poppins(fontSize: 12, color: colors.text)),
                                 ],
                               ),
@@ -387,7 +419,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Total: ${order.total.toStringAsFixed(0)} DA',
+                                '${s.t('Total')}: ${s.money(order.total)}',
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -410,7 +442,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        'Update Status',
+                                        s.t('Update Status'),
                                         style: GoogleFonts.poppins(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
@@ -423,10 +455,10 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                                   ),
                                 ),
                                 itemBuilder: (context) => [
-                                  for (final s in ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'])
+                                  for (final st in ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'])
                                     PopupMenuItem(
-                                      value: s,
-                                      child: Text(s, style: TextStyle(color: colors.text, fontSize: 13)),
+                                      value: st,
+                                      child: Text(s.t(st), style: TextStyle(color: colors.text, fontSize: 13)),
                                     ),
                                 ],
                               ),
@@ -443,6 +475,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
   }
 
   Widget _statusBadge(String status, Color color) {
+    final s = AppStrings.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -451,7 +484,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
-        status,
+        s.t(status),
         style: GoogleFonts.poppins(
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -463,6 +496,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
 
   // ================= 2. PRODUCTS TAB =================
   Widget _buildProductsTab(AppThemeColors colors, bool isDark, AsyncValue<List<Product>> productsAsync) {
+    final s = AppStrings.of(context);
     return Column(
       children: [
         // Search & Add product bar
@@ -475,7 +509,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                   onChanged: (v) => setState(() => _productQuery = v.trim().toLowerCase()),
                   style: GoogleFonts.poppins(fontSize: 13, color: colors.text),
                   decoration: InputDecoration(
-                    hintText: 'Search inventory...',
+                    hintText: s.t('Search inventory...'),
                     hintStyle: GoogleFonts.poppins(fontSize: 12, color: colors.mutedText),
                     prefixIcon: Icon(Icons.search, size: 18, color: colors.mutedText),
                     fillColor: colors.inputFill,
@@ -500,7 +534,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 icon: const Icon(Icons.add, size: 18),
-                label: Text('Add Item', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                label: Text(s.t('Add Item'), style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -510,7 +544,9 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
         Expanded(
           child: productsAsync.when(
             loading: () => Center(child: CircularProgressIndicator(color: colors.primary)),
-            error: (e, _) => Center(child: Text('Error: $e', style: TextStyle(color: colors.text))),
+            error: (e, _) => Center(
+                child: Text(s.tf('Error: {error}', {'error': '$e'}),
+                    style: TextStyle(color: colors.text))),
             data: (products) {
               final list = _productQuery.isEmpty
                   ? products
@@ -521,7 +557,10 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
 
               if (list.isEmpty) {
                 return Center(
-                  child: Text('No products found matching "$_productQuery"',
+                  child: Text(
+                      s.tf('No products found matching "{query}"',
+                          {'query': _productQuery}),
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(color: colors.mutedText)),
                 );
               }
@@ -561,12 +600,12 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                                 ),
                               ),
                               Text(
-                                '${p.brand} · ${p.category}',
+                                '${p.brand} · ${s.t(p.category)}',
                                 style: GoogleFonts.poppins(fontSize: 11, color: colors.mutedText),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${p.price.toStringAsFixed(0)} DA',
+                                s.money(p.price),
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -578,7 +617,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                         ),
                         IconButton(
                           icon: Icon(Icons.edit_outlined, color: colors.primary, size: 20),
-                          tooltip: 'Edit Product',
+                          tooltip: s.t('Edit Product'),
                           onPressed: () {
                             showDialog(
                               context: context,
@@ -588,7 +627,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                          tooltip: 'Delete Product',
+                          tooltip: s.t('Delete Product'),
                           onPressed: () {
                             _confirmDeleteProduct(p);
                           },
@@ -606,15 +645,19 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
   }
 
   void _confirmDeleteProduct(Product product) {
+    final s = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Product'),
-        content: Text('Are you sure you want to remove "${product.name}" from your catalog?'),
+        title: Text(s.t('Delete Product')),
+        content: Text(s.tf(
+          'Are you sure you want to remove "{name}" from your catalog?',
+          {'name': product.name},
+        )),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(s.t('Cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
@@ -622,7 +665,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
               ref.read(productsProvider.notifier).deleteProduct(product.id);
               Navigator.of(context).pop();
             },
-            child: const Text('Delete'),
+            child: Text(s.t('Delete')),
           ),
         ],
       ),
@@ -631,37 +674,41 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
 
   // ================= 3. SETTINGS & ANALYTICS TAB =================
   Widget _buildSettingsTab(AppThemeColors colors, bool isDark, double totalRevenue, int ordersCount) {
+    final s = AppStrings.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Store Details & Commercial Settings',
+          Text(s.t('Store Details & Commercial Settings'),
               style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: colors.text)),
           const SizedBox(height: 12),
 
           _settingCard(colors, [
-            _tile(colors, Icons.store, 'Store Commercial Name', 'GlowCare Cosmetics SARL'),
-            _tile(colors, Icons.badge, 'Commercial License', 'E-Commerce Retail (Algeria - 58 Wilayas)'),
-            _tile(colors, Icons.local_shipping, 'Default Delivery Fee', '500 DA'),
-            _tile(colors, Icons.currency_exchange, 'Operating Currency', 'Algerian Dinar (DZD / DA)'),
+            _tile(colors, Icons.store, s.t('Store Commercial Name'), 'GlowCare Cosmetics SARL'),
+            _tile(colors, Icons.badge, s.t('Commercial License'),
+                s.t('E-Commerce Retail (Algeria - 58 Wilayas)')),
+            _tile(colors, Icons.local_shipping, s.t('Default Delivery Fee'), s.money(500)),
+            _tile(colors, Icons.currency_exchange, s.t('Operating Currency'),
+                s.t('Algerian Dinar (DZD / DA)')),
           ]),
           const SizedBox(height: 20),
 
-          Text('Inventory & Demo Data Actions',
+          Text(s.t('Inventory & Demo Data Actions'),
               style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: colors.text)),
           const SizedBox(height: 12),
 
           _settingCard(colors, [
             ListTile(
               leading: Icon(Icons.refresh, color: colors.primary),
-              title: Text('Reset Catalog to Demo Default', style: GoogleFonts.poppins(fontSize: 13, color: colors.text)),
-              subtitle: Text('Restore original 16 products catalog', style: GoogleFonts.poppins(fontSize: 11, color: colors.mutedText)),
+              title: Text(s.t('Reset Catalog to Demo Default'), style: GoogleFonts.poppins(fontSize: 13, color: colors.text)),
+              subtitle: Text(s.t('Restore original 16 products catalog'), style: GoogleFonts.poppins(fontSize: 11, color: colors.mutedText)),
               trailing: ElevatedButton(
                 onPressed: () async {
                   await ref.read(productsProvider.notifier).resetToDefaults();
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Catalog restored to defaults')),
+                    SnackBar(content: Text(s.t('Catalog restored to defaults'))),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -669,7 +716,7 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
                   foregroundColor: isDark ? const Color(0xFF141D1A) : AppColors.white,
                   minimumSize: const Size(80, 36),
                 ),
-                child: const Text('Reset', style: TextStyle(fontSize: 12)),
+                child: Text(s.t('Reset'), style: const TextStyle(fontSize: 12)),
               ),
             ),
           ]),
@@ -679,12 +726,13 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen>
   }
 
   Widget _settingCard(AppThemeColors colors, List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
+    return Material(
+      color: colors.cardBackground,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.1)),
+        side: BorderSide(color: colors.primary.withValues(alpha: 0.1)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(children: children),
     );
   }

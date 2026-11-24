@@ -13,6 +13,9 @@ class Order {
   final double delivery;
   final DateTime date;
   final String status; // Pending, Confirmed, Shipped, Delivered, Cancelled
+  final String paymentMethod; // cod, cib, edahabia, baridimob
+  final String paymentStatus; // cod, pending
+  final String paymentReference; // masked card digits or transfer reference
 
   const Order({
     required this.id,
@@ -26,6 +29,9 @@ class Order {
     required this.delivery,
     required this.date,
     this.status = 'Pending',
+    this.paymentMethod = 'cod',
+    this.paymentStatus = 'cod',
+    this.paymentReference = '',
   });
 
   Order copyWith({
@@ -43,6 +49,9 @@ class Order {
       delivery: delivery,
       date: date,
       status: status ?? this.status,
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentStatus,
+      paymentReference: paymentReference,
     );
   }
 
@@ -59,6 +68,9 @@ class Order {
     'delivery': delivery,
     'date': date.toIso8601String(),
     'status': status,
+    'paymentMethod': paymentMethod,
+    'paymentStatus': paymentStatus,
+    'paymentReference': paymentReference,
     'items': [
       for (final e in items)
         {
@@ -109,6 +121,9 @@ class Order {
           ? (DateTime.tryParse(j['date'].toString()) ?? DateTime.now())
           : DateTime.now(),
       status: (j['status'] ?? 'Pending').toString(),
+      paymentMethod: (j['paymentMethod'] ?? 'cod').toString(),
+      paymentStatus: (j['paymentStatus'] ?? 'cod').toString(),
+      paymentReference: (j['paymentReference'] ?? '').toString(),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/primary_button.dart';
 import 'auth_provider.dart';
@@ -19,6 +20,7 @@ Timer? startSignupPromptTimer(BuildContext context, WidgetRef ref) {
 }
 
 void _showSignupDialog(BuildContext context) {
+  final s = AppStrings.of(context);
   showDialog(
     context: context,
     builder: (_) => Dialog(
@@ -33,7 +35,7 @@ void _showSignupDialog(BuildContext context) {
                 size: 48, color: AppColors.deepGreen),
             const SizedBox(height: 12),
             Text(
-              'Get 10% off your first order',
+              s.t('Get 10% off your first order'),
               textAlign: TextAlign.center,
               style: GoogleFonts.playfairDisplay(
                 fontSize: 22,
@@ -43,7 +45,7 @@ void _showSignupDialog(BuildContext context) {
             ),
             const SizedBox(height: 8),
             Text(
-              'Create a free account to save your routine and unlock personalized picks.',
+              s.t('Create a free account to save your routine and unlock personalized picks.'),
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 13,
@@ -52,7 +54,7 @@ void _showSignupDialog(BuildContext context) {
             ),
             const SizedBox(height: 20),
             PrimaryButton(
-              label: 'Sign Up',
+              label: s.t('Sign Up'),
               onPressed: () {
                 Navigator.of(context).pop();
                 // الانتقال لصفحة Login أو Signup
@@ -64,7 +66,7 @@ void _showSignupDialog(BuildContext context) {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Maybe later',
+                s.t('Maybe later'),
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   color: AppColors.mutedText,

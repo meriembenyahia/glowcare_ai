@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_strings.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../../core/theme/widgets/app_logo.dart';
 import 'onboarding_screen.dart';
@@ -26,6 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -65,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Healthy Skin  ✦  Natural Beauty',
+                  s.t('Healthy Skin  ✦  Natural Beauty'),
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     letterSpacing: 1,
@@ -74,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  'Your personalized\nskincare & makeup companion',
+                  s.t('Your personalized\nskincare & makeup companion'),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 14,

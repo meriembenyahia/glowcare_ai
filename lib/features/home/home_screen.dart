@@ -13,6 +13,7 @@ import '../ingredients/ingredient_checker_screen.dart';
 import '../loyalty/loyalty_card_screen.dart';
 import '../loyalty/loyalty_provider.dart';
 import '../auth/auth_provider.dart';
+import '../auth/login_screen.dart';
 import '../auth/signup_screen.dart';
 import '../auth/signup_prompt.dart';
 import '../cart/cart_screen.dart';
@@ -34,11 +35,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _promptTimer;
   late final TextEditingController _searchController;
 
+  int _logoTapCount = 0;
+  DateTime? _lastLogoTap;
+
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     _promptTimer = startSignupPromptTimer(context, ref);
+  }
+
+  /// Hidden access to the seller/developer portals:
+  /// 7 quick taps on the logo. Guests are sent to sign in first.
+  void _onLogoTap() {
+    final now = DateTime.now();
+    if (_lastLogoTap == null ||
+        now.difference(_lastLogoTap!) > const Duration(seconds: 3)) {
+      _logoTapCount = 0;
+    }
+    _lastLogoTap = now;
+    _logoTapCount++;
+    if (_logoTapCount < 7) return;
+    _logoTapCount = 0;
+    final loggedIn = ref.read(authProvider) == AuthStatus.loggedIn;
+    if (loggedIn) {
+      RoleSwitcherDialog.show(context);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
   }
 
   @override
@@ -82,7 +108,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      const AppLogo(size: 34),
+                      GestureDetector(
+                        onTap: _onLogoTap,
+                        child: const AppLogo(size: 34),
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'GlowCare AI',
@@ -99,16 +128,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       IconButton(
                         icon: const Icon(Icons.language),
                         color: colors.primary,
-                        tooltip: 'تغيير اللغة (Change Language)',
+                        tooltip: strings.t('Change Application Language'),
                         onPressed: () => LanguagePickerDialog.show(context),
                       ),
                       IconButton(
-                        icon: Icon(Icons.hub_outlined, color: colors.text),
-                        tooltip: 'Switch Portal (Customer/Seller/Dev)',
-                        onPressed: () => RoleSwitcherDialog.show(context),
-                      ),
-                      IconButton(
                         icon: Icon(Icons.shopping_bag_outlined, color: colors.text),
+                        tooltip: strings.t('My Cart'),
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const CartScreen()),
                         ),
@@ -135,7 +160,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: const Text('Sign Up', style: TextStyle(fontSize: 11)),
+                          child: Text(strings.t('Sign Up'), style: const TextStyle(fontSize: 11)),
                         ),
                     ],
                   ),
@@ -252,7 +277,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onPressed: () => ref.invalidate(productsProvider),
                       icon: Icon(Icons.refresh, color: colors.primary),
                       label: Text(
-                        'Tap to retry',
+                        strings.t('Tap to retry'),
                         style: GoogleFonts.poppins(color: colors.primary),
                       ),
                     ),
@@ -332,6 +357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       p.name,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
+                                      textDirection: TextDirection.ltr,
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -339,7 +365,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                     ),
                                     Text(
-                                      '${p.brand} · ${p.category}',
+                                      '${p.brand} · ${strings.t(p.category)}',
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
                                         color: colors.mutedText,
@@ -347,7 +373,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${p.price.toStringAsFixed(0)} DA',
+                                      strings.money(p.price),
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
@@ -357,7 +383,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ],
                                 ),
                               ),
-                              Icon(Icons.chevron_right, color: colors.mutedText),
+                              Icon(strings.chevronIcon(context), color: colors.mutedText),
                             ],
                           ),
                         ),
@@ -511,7 +537,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: colors.primary),
+            Icon(strings.chevronIcon(context), color: colors.primary),
           ],
         ),
       ),
@@ -569,7 +595,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: colors.primary),
+            Icon(strings.chevronIcon(context), color: colors.primary),
           ],
         ),
       ),
@@ -639,7 +665,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          tier.label,
+                          strings.t(tier.label),
                           style: GoogleFonts.poppins(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -670,7 +696,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: colors.primary,
                   ),
                 ),
-                Icon(Icons.chevron_right, color: colors.primary, size: 20),
+                Icon(strings.chevronIcon(context), color: colors.primary, size: 20),
               ],
             ),
           ],
@@ -738,6 +764,7 @@ class _ProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isFav = ref.watch(wishlistProvider).contains(product.id);
     final colors = AppThemeColors.of(context);
+    final s = AppStrings.of(context);
 
     return Container(
       width: 155,
@@ -757,7 +784,7 @@ class _ProductCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Align(
-            alignment: Alignment.topRight,
+            alignment: AlignmentDirectional.topEnd,
             child: GestureDetector(
               onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
               child: Icon(
@@ -777,6 +804,7 @@ class _ProductCard extends ConsumerWidget {
             product.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            textDirection: TextDirection.ltr,
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -795,7 +823,7 @@ class _ProductCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${product.price.toStringAsFixed(0)} DA',
+                s.money(product.price),
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

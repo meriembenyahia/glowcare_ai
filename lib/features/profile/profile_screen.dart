@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/localization/locale_provider.dart';
+import '../../core/role/role_access.dart';
 import '../../core/role/role_provider.dart';
 import '../../core/role/role_switcher_dialog.dart';
 import '../../core/theme/theme_provider.dart';
+import '../../core/theme/widgets/app_bar_title.dart';
 import '../../core/theme/widgets/app_colors.dart';
 import '../auth/auth_provider.dart';
 import '../auth/login_screen.dart';
@@ -44,8 +46,8 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: colors.background,
         elevation: 0,
         centerTitle: true,
-        title: Text(
-          strings.myProfile,
+        title: AppBarTitle(
+          text: strings.myProfile,
           style: GoogleFonts.poppins(
             fontSize: 17,
             fontWeight: FontWeight.w600,
@@ -100,7 +102,7 @@ class ProfileScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            isLoggedIn ? userEmail : 'Sign in to sync your routine & orders',
+                            isLoggedIn ? userEmail : strings.t('Sign in to sync your routine & orders'),
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               color: colors.mutedText,
@@ -157,7 +159,7 @@ class ProfileScreen extends ConsumerWidget {
                             Row(
                               children: [
                                 Text(
-                                  'Carte de Fidélité',
+                                  strings.t('Carte de Fidélité'),
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
@@ -166,7 +168,7 @@ class ProfileScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '• ${loyalty.tier.label}',
+                                  '• ${strings.t(loyalty.tier.label)}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -177,7 +179,9 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${loyalty.totalPoints} pts accumulés • Remises & cadeaux',
+                              strings.tf('{points} pts accumulés • Remises & cadeaux', {
+                                'points': '${loyalty.totalPoints}',
+                              }),
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 color: Colors.white.withValues(alpha: 0.9),
@@ -193,7 +197,7 @@ class ProfileScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'Ouvrir',
+                          strings.t('Ouvrir'),
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -288,7 +292,7 @@ class ProfileScreen extends ConsumerWidget {
                     child: _shortcutTile(
                       context,
                       icon: Icons.psychology_outlined,
-                      label: 'ChatGPT Setup',
+                      label: strings.t('ChatGPT Setup'),
                       onTap: () => AiSettingsDialog.show(context),
                     ),
                   ),
@@ -297,21 +301,23 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // 3. تبديل دور التطبيق (Multi-Role Portal)
-              Text(
-                'Application Interface (جاهز للبيع - 3 أدوار)',
-                style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: colors.text,
+              if (isLoggedIn) ...[
+                Text(
+                  strings.t('Application Interface (جاهز للبيع - 3 أدوار)'),
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colors.text,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _roleCard(context, ref, colors),
-              const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                _roleCard(context, ref, colors),
+                const SizedBox(height: 24),
+              ],
 
               // 4. إعدادات الحساب
               Text(
-                'Account Settings',
+                strings.t('Account Settings'),
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -322,8 +328,10 @@ class ProfileScreen extends ConsumerWidget {
               _settingsTile(
                 context,
                 icon: Icons.dark_mode_outlined,
-                title: 'Dark Mode',
-                subtitle: isDark ? 'Dark theme enabled' : 'Light theme enabled',
+                title: strings.t('Dark Mode'),
+                subtitle: isDark
+                    ? strings.t('Dark theme enabled')
+                    : strings.t('Light theme enabled'),
                 trailing: Switch(
                   value: isDark,
                   activeTrackColor: colors.primary,
@@ -339,7 +347,7 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.language_outlined,
                   title: strings.language,
                   subtitle: langName,
-                  trailing: Icon(Icons.arrow_forward_ios, size: 14, color: colors.mutedText),
+                  trailing: Icon(strings.chevronIcon(context), size: 16, color: colors.mutedText),
                 ),
               ),
               const SizedBox(height: 10),
@@ -353,8 +361,8 @@ class ProfileScreen extends ConsumerWidget {
               _settingsTile(
                 context,
                 icon: Icons.shield_outlined,
-                title: 'Privacy & Security',
-                subtitle: 'Protected by Supabase RLS',
+                title: strings.t('Privacy & Security'),
+                subtitle: strings.t('Protected by Supabase RLS'),
               ),
               const SizedBox(height: 24),
 
@@ -367,7 +375,7 @@ class ProfileScreen extends ConsumerWidget {
                     if (isLoggedIn) {
                       ref.read(authProvider.notifier).logOut();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Logged out successfully.')),
+                        SnackBar(content: Text(strings.t('Logged out successfully.'))),
                       );
                     } else {
                       Navigator.of(context).push(
@@ -402,6 +410,8 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _roleCard(BuildContext context, WidgetRef ref, AppThemeColors colors) {
     final currentRole = ref.watch(roleProvider);
+    final isAdmin = isAdminEmail(ref.read(authProvider.notifier).userEmail);
+    final s = AppStrings.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -436,7 +446,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    currentRole.title,
+                    s.t(currentRole.title),
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -455,13 +465,13 @@ class ProfileScreen extends ConsumerWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 icon: const Icon(Icons.swap_horiz, size: 16),
-                label: const Text('Switch', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                label: Text(s.t('Switch'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            currentRole.description,
+            s.t(currentRole.description),
             style: GoogleFonts.poppins(fontSize: 11, color: colors.mutedText),
           ),
           const SizedBox(height: 12),
@@ -469,11 +479,13 @@ class ProfileScreen extends ConsumerWidget {
           // 3 Quick switcher buttons
           Row(
             children: [
-              _rolePill(context, ref, AppRole.customer, 'Customer', Icons.shopping_bag_outlined, currentRole == AppRole.customer, colors),
+              _rolePill(context, ref, AppRole.customer, s.t('Customer'), Icons.shopping_bag_outlined, currentRole == AppRole.customer, colors),
               const SizedBox(width: 8),
-              _rolePill(context, ref, AppRole.seller, 'Seller', Icons.storefront, currentRole == AppRole.seller, colors),
-              const SizedBox(width: 8),
-              _rolePill(context, ref, AppRole.developer, 'Dev', Icons.terminal, currentRole == AppRole.developer, colors),
+              _rolePill(context, ref, AppRole.seller, s.t('Seller'), Icons.storefront, currentRole == AppRole.seller, colors),
+              if (isAdmin) ...[
+                const SizedBox(width: 8),
+                _rolePill(context, ref, AppRole.developer, s.t('Dev'), Icons.terminal, currentRole == AppRole.developer, colors),
+              ],
             ],
           ),
         ],
